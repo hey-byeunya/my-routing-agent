@@ -131,27 +131,6 @@ def gold_fewshot_turns() -> list[GoldTurn]:
     return [t for t in gold_turns() if t.split == "fewshot"]
 
 
-# ---------------------------------------------------------------- 하드케이스
-
-
-def hard_cases(split: str | None = None) -> list[dict]:
-    """경계 사례. split 을 주면 그것만 (dev | eval)."""
-    rows = _read_csv(DATA / "hard_cases.csv")
-    if split is None:
-        return rows
-    return [r for r in rows if (r.get("split") or "eval") == split]
-
-
-def assert_hard_split_disjoint() -> None:
-    dev = {r["qa_id"] for r in hard_cases("dev")}
-    ev = {r["qa_id"] for r in hard_cases("eval")}
-    overlap = dev & ev
-    if overlap:
-        raise AssertionError(f"하드케이스 dev 와 eval 이 겹친다: {sorted(overlap)}")
-    if not dev:
-        raise AssertionError("하드케이스 dev 가 비어 있다 — split_hard_cases.py 를 돌려야 한다")
-
-
 def _main() -> None:
     from collections import Counter
 
