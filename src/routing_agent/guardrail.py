@@ -37,7 +37,8 @@ def _numbers(text: str) -> list[int]:
 # 주어 자리의 낱말이 근거 어디에도 없으면, 우리는 모르는 것을 두고 규정을 만든 것이다.
 _CLAIM = re.compile(
     r"([가-힣A-Za-z0-9]{2,})(?:은|는|이|가)\s*[^.!?]{0,40}?"
-    r"(가능합니다|불가합니다|불가능합니다|됩니다|안\s?됩니다|할\s?수\s?있습니다|할\s?수\s?없습니다)"
+    r"(가능합니다|불가합니다|불가능합니다|됩니다|안\s?됩니다|할\s?수\s?있습니다|할\s?수\s?없습니다"
+    r"|해당합니다|해당하므로|해당되므로|해당되어|금지되어|금지됩니다|제한됩니다)"
 )
 
 # 서술어·부사처럼 주어로 볼 수 없는 것들. 이 낱말이 주어 자리에 잡히면 흘린다.
@@ -59,7 +60,7 @@ def unsupported_claims(answer: str, context: str = "", tool_results: list[str] |
     고객이 말한 낱말이라는 것만으로는 근거가 되지 않는다. 고객이 "사과" 라고 했다고
     사과에 대한 규정이 생기지는 않기 때문이다. 그래서 `said` 는 근거로 세지 않는다.
     """
-    grounded = (context or "") + "\n" + "\n".join(str(t) for t in (tool_results or []))
+    grounded = strip_forbidden_examples(context or "") + "\n" + "\n".join(str(t) for t in (tool_results or []))
     out: list[str] = []
     for subject, _verb in _CLAIM.findall(answer or ""):
         word = subject.strip()
@@ -74,12 +75,54 @@ def unsupported_claims(answer: str, context: str = "", tool_results: list[str] |
     return sorted(set(out))
 
 
+# ---------------------------------------------------------------- 기간·기한
+
+# "2~3주", "1~2일", "04시" 처럼 **단위가 붙은 수**. 금액이 아니라서 MIN_AMOUNT
+# 문턱에 걸리지 않고 그냥 빠져나간다. 그런데 승인기간을 "2~3주" 대신 "1~2일" 로
+# 말하면 고객은 그 말을 믿고 기다린다 — 금액을 틀리는 것과 다르지 않다.
+_DURATION = re.compile(r"(\d+)\s*(?:~\s*(\d+)\s*)?(영업일|일|주일|주|개월|달|시간|분|시)")
+
+
+def _durations(text: str) -> set[str]:
+    out: set[str] = set()
+    for a, b, unit in _DURATION.findall(text or ""):
+        out.add(f"{a}{unit}")
+        if b:
+            out.add(f"{b}{unit}")
+    return out
+
+
+def unsupported_durations(answer: str, context: str = "", tool_results: list[str] | None = None,
+                          said: str = "") -> list[str]:
+    """근거에 없는 기간·기한을 말했는가.
+
+    근거에서도 같은 단위로 그 수를 찾을 수 있어야 한다. "2~3주" 가 근거에 있으면
+    답변의 "2주"·"3주" 는 통과하고, "1~2일" 은 걸린다.
+    """
+    grounded = _durations(strip_forbidden_examples(context or "") + "\n"
+                          + "\n".join(str(t) for t in (tool_results or []))
+                          + "\n" + (said or ""))
+    return sorted(d for d in _durations(answer) if d not in grounded)
+
+
+# 매뉴얼은 "이렇게 말하지 마라" 는 예시를 ✗ 로 표시한다. 그 줄에 든 수치·표현은
+# **근거가 아니라 금지 예시**다. 그대로 근거로 세면, 매뉴얼이 하지 말라고 적어 둔
+# 말을 검사가 통과시킨다 — 실제로 "1~2일 내 진행됩니다"(§0 원칙2 의 ✗ 예시)가
+# 승인기간 날조를 통과시켰다.
+_FORBIDDEN_LINE = re.compile(r"(?m)^\s*[✗×]\s.*$")
+
+
+def strip_forbidden_examples(text: str) -> str:
+    return _FORBIDDEN_LINE.sub("", text or "")
+
+
 def check_guardrail(answer: str, tool_results: list[str], context: str = "", said: str = "") -> dict:
     """근거에서 찾을 수 없는 큰 수를 골라낸다.
 
     `said` 는 고객이 직접 말한 것(이번 문의와 이전 대화)이다. 고객이 준
     예약번호·운송장번호를 되읽어 주는 것은 날조가 아니므로 근거로 친다.
     """
+    context = strip_forbidden_examples(context)
     grounded: set[int] = set()
     for source in [*tool_results, context, said]:
         grounded.update(_numbers(str(source)))
@@ -113,11 +156,15 @@ def check_guardrail(answer: str, tool_results: list[str], context: str = "", sai
     # 숫자만 보면 "X 는 ~ 가능합니다" 같은 **말로 하는 단정**이 그대로 나간다.
     # 같은 방식으로 본다 — 근거에 있으면 통과, 없으면 잡는다.
     claims = unsupported_claims(answer, context, tool_results)
+    # 기간·기한은 금액이 아니라서 MIN_AMOUNT 문턱에 안 걸린다. 그런데 승인기간을
+    # "2~3주" 대신 "1~2일" 로 말하면 고객은 그 말을 믿고 기다린다.
+    durations = unsupported_durations(answer, context, tool_results, said)
 
     return {
-        "ok": not unsupported and not claims,
+        "ok": not unsupported and not claims and not durations,
         "unsupported": sorted(set(unsupported)),
         "unsupported_claims": claims,
+        "unsupported_durations": durations,
         "checked_min": MIN_AMOUNT,
         "grounded_count": len(grounded),
     }

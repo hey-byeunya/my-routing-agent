@@ -404,8 +404,10 @@ def build_graph(
         # 화면에도 없는 수치를 만들어 안내하는 것"이 그대로 일어난다.
         bad = verdict["unsupported"]
         bad_claims = verdict.get("unsupported_claims") or []
+        bad_durations = verdict.get("unsupported_durations") or []
         log("6/6 검증",
-            f"근거 없는 수치 {bad} · 단정 {bad_claims} — 답변을 내보내지 않는다")
+            f"근거 없는 수치 {bad} · 단정 {bad_claims} · 기간 {bad_durations}"
+            " — 답변을 내보내지 않는다")
 
         # 한 번은 그 수치를 빼고 다시 쓰게 해 본다. 근거는 그대로 주므로
         # 답할 수 있는 만큼은 답하게 된다.
@@ -418,7 +420,7 @@ def build_graph(
             history=_history_text(state.get("history")),
             question=state["question"],
             forbid_numbers=bad,
-            forbid_claims=bad_claims,
+            forbid_claims=bad_claims + bad_durations,
         )
         try:
             retried = str(llm.invoke(retry_prompt).content).strip()

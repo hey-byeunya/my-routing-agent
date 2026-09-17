@@ -199,23 +199,58 @@ def get_tracking_status(tracking_number: str) -> dict:
 
 
 def get_restricted_items(item: str | None = None) -> dict:
+    """취급 제한 물품 조회. 정책 §7.1 표를 그대로 따른다.
+
+    문서와 조회가 다른 판단을 내면 상담원이 어느 쪽을 믿어야 할지 알 수 없다.
+    여기 구분은 §7.1 표에서 그대로 옮긴 것이다.
+    """
     rules = _db()["restricted_items"]
     if not item:
         return rules
     text = item.strip()
-    for name in rules["prohibited"]:
-        if name in text or text in name:
-            # 접수 자체가 불가한 그룹이다. 택배사 기준을 확인하라는 안내를 붙이면 안 된다.
-            return {"item": text, "verdict": "접수 불가", "matched": name, "note": "택배사와 무관하게 접수할 수 없다"}
-    for name in rules["restricted_by_carrier"]:
-        if name in text or text in name:
-            return {
-                "item": text,
-                "verdict": "택배사 기준에 따라 제한",
-                "matched": name,
-                "note": "택배사마다 기준이 다르다. 단정하지 말고 선택한 택배사 기준을 확인하도록 안내",
-            }
-    return {"item": text, "verdict": "목록에 없음", "note": "목록에 없다고 무조건 가능하다는 뜻은 아니다. 택배사 기준 확인 필요"}
+
+    for group, examples in (rules.get("prohibited_groups") or {}).items():
+        for example in examples:
+            if example and example in text:
+                return {
+                    "item": text,
+                    "verdict": "접수 불가",
+                    "group": group,
+                    "matched": example,
+                    "note": f"{group} 에 드는 물품이라 접수할 수 없다",
+                }
+
+    # 포장 때문에 갈리는 경우는 물품 자체가 금지된 것과 다르다 (§7.2).
+    for category, rule in (rules.get("packaging_rules") or {}).items():
+        for blocked in rule.get("no", []):
+            if blocked and blocked in text:
+                return {
+                    "item": text,
+                    "verdict": "포장 기준 미충족",
+                    "category": category,
+                    "matched": blocked,
+                    "ok_packaging": rule.get("ok"),
+                    "note": "물품이 금지된 것이 아니라 포장이 문제다. 어떻게 포장하면 되는지 함께 안내한다",
+                }
+
+    # 포장 조건만 지키면 되는 품목 (§7.2). "안 된다" 와 갈라 말해야 한다.
+    for category, rule in (rules.get("packaging_rules") or {}).items():
+        for name in rule.get("items", []):
+            if name and name in text:
+                return {
+                    "item": text,
+                    "verdict": "포장 조건 충족 시 접수 가능",
+                    "category": category,
+                    "matched": name,
+                    "ok_packaging": rule.get("ok"),
+                    "note": rule.get("note", ""),
+                }
+
+    return {
+        "item": text,
+        "verdict": "목록에 없음",
+        "note": rules.get("note", "단정하지 말고 택배사 취급 기준을 확인하도록 안내한다"),
+    }
 
 
 def escalate_to_agent(reason: str, summary: str, sentiment: str = "neutral") -> dict:

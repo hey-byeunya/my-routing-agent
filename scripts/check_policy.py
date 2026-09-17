@@ -108,6 +108,18 @@ def main() -> int:
     check("가드레일 판정에 반영된다",
           not check_guardrail("드론은 배송 가능합니다.", [], ctx_rg)["ok"])
 
+    # ── 근거에 없는 기간·기한을 말하지 않는가
+    print("\n[기간·기한]")
+    from routing_agent.guardrail import strip_forbidden_examples, unsupported_durations
+
+    ctx_bb = build_context("BIZ_BULK")
+    check("근거에 없는 기간을 잡는다", unsupported_durations("1~2일 소요됩니다.", ctx_bb) == ["1일", "2일"])
+    check("근거에 있는 기간은 통과", not unsupported_durations("최대 2~3주 걸립니다.", ctx_bb))
+    check("문장 수 같은 표현은 잡지 않는다", not unsupported_durations("1~3문장으로 안내합니다.", ctx_bb))
+    check("✗ 금지 예시는 근거가 아니다",
+          "1~2일" not in strip_forbidden_examples(ctx_bb) and "1~2일" in ctx_bb)
+    check("가드레일 판정에 반영된다", not check_guardrail("1~2일 소요됩니다.", [], ctx_bb)["ok"])
+
     # ── 같은 말을 되풀이하지 않는가 (§10.2 의 취지)
     print("\n[되풀이]")
     from routing_agent.guardrail import is_repeat_answer

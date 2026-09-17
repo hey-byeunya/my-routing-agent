@@ -199,6 +199,31 @@ NEW_CONVERSATIONS = [
 # 모범 답안이 자기 기준을 못 넘기면 그 기준이 틀린 것이다.
 PATCHES = [
     {
+        "conv_id": "C-010",
+        "turn": 2,
+        "replace_expect": {
+            "action": "ANSWER",
+            "tools": [],
+            "must": ["액체류"],
+            "forbid": ["무조건 보낼 수 있습니다", "택배사에 따라 가능합니다"],
+            "rubric": (
+                "정책 §7.1 이 바뀌었다. 액체류·액상물질은 '택배운송에 적합하지 않은 물품·포장' "
+                "군에 들어 접수할 수 없다. 옛 기준은 '택배사마다 다르다' 였는데, 근거 문서가 "
+                "바뀌었으므로 정답도 따라 바뀐다 — 수치를 올리려 기준을 느슨하게 한 것이 아니라 "
+                "출처가 달라진 것이다."
+            ),
+            "reference": (
+                "액체류는 택배운송에 적합하지 않은 물품으로 분류되어 접수가 어렵습니다. "
+                "포장 방법에 따라 달라질 수 있는 품목은 어떻게 포장하면 되는지 함께 안내해 "
+                "드리겠습니다."
+            ),
+        },
+        "why": (
+            "근거 문서 §7 을 실제 택배 취급제한 기준으로 교체하면서 액체류가 접수 불가 군으로 "
+            "옮겨졌다. 모범 답안이 옛 기준을 말하고 있으면 check_grader 가 먼저 걸린다."
+        ),
+    },
+    {
         "conv_id": "C-004",
         "turn": 2,
         "drop_must_ask": ["선호하는 택배사(없으면 상관없음으로 확인)"],
@@ -376,6 +401,11 @@ def apply_patches(payload: dict) -> list[str]:
             continue
         for turn in conv["turns"]:
             if turn.get("turn") != patch["turn"] or not turn.get("expect"):
+                continue
+            if patch.get("replace_expect"):
+                if turn["expect"] != patch["replace_expect"]:
+                    turn["expect"] = dict(patch["replace_expect"])
+                    applied.append(f"{patch['conv_id']}#{patch['turn']}")
                 continue
             before = turn["expect"].get("must_ask", [])
             after = [a for a in before if a not in patch["drop_must_ask"]]

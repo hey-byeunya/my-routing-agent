@@ -359,13 +359,21 @@ st.markdown(
         scroll-behavior: smooth;
         padding-right: 6px;
       }
+      /* 상담 창은 좁아야 읽기 편하다. 기본값은 화면 폭을 거의 다 먹어서
+         고객용 화면이라기보다 개발자 화면처럼 보인다. */
+      /* 다이얼로그 본체는 section[role="dialog"] 다 (div 가 아니다). 태그를 박아 두면
+         Streamlit 이 구조를 바꿀 때 조용히 안 먹으므로 역할만으로 고른다. */
+      [data-testid="stDialog"] [role="dialog"] {
+        max-width: 500px;
+        width: 100%;
+      }
     </style>
     """,
     unsafe_allow_html=True,
 )
 
 
-@st.dialog("상담 도우미", width="large")
+@st.dialog("상담 도우미")
 def customer_chat() -> None:
     """고객이 볼 화면. 답변만 있고 내부 판정은 하나도 드러내지 않는다."""
     thread: list[dict] = st.session_state.get("turns", [])
