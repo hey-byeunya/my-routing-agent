@@ -78,7 +78,7 @@ class GoldTurn:
     conv_id: str
     turn: int
     route: str
-    history: tuple[tuple[str, str], ...]  # 이 턴 직전까지의 (역할, 발화)
+    history: tuple[tuple[str, str, str], ...]  # 이 턴 직전까지의 (역할, 발화, 카테고리)
     question: str  # 직전 고객 발화
     expect: dict
     split: str
@@ -94,12 +94,15 @@ def gold_turns() -> tuple[GoldTurn, ...]:
     payload = json.loads((DATA / "answer_goldenset.json").read_text(encoding="utf-8"))
     out: list[GoldTurn] = []
     for conv in payload["conversations"]:
-        history: list[tuple[str, str]] = []
+        # 이력 항목에 그 대화의 카테고리를 함께 싣는다. 정답셋은 한 대화가 한 사안이라
+        # 대화의 route 를 그대로 쓰면 된다. 이게 있어야 "같은 사안을 몇 번째 묻는가"를
+        # 셀 수 있다 (agent.conversation_progress).
+        history: list[tuple[str, str, str]] = []
         last_customer = ""
         for turn in conv["turns"]:
             if turn["role"] == "customer":
                 last_customer = turn["text"]
-                history.append(("customer", turn["text"]))
+                history.append(("customer", turn["text"], conv["route"]))
                 continue
             expect = turn.get("expect")
             if expect:
@@ -116,7 +119,7 @@ def gold_turns() -> tuple[GoldTurn, ...]:
                 )
             # 이어지는 턴의 이력에는 모범 답안을 넣는다. 실행 결과가 아니라 정답을 물려야
             # 뒤 턴의 채점이 앞 턴 성패에 오염되지 않는다.
-            history.append(("agent", (expect or {}).get("reference", "")))
+            history.append(("agent", (expect or {}).get("reference", ""), conv["route"]))
     return tuple(out)
 
 

@@ -203,7 +203,9 @@ except BackendError as exc:
     st.stop()
 
 # 앞선 턴이 이력이 된다. 이것이 없으면 §10.2(반복 문의 이관)가 성립하지 않는다.
-history = [(role, text) for past in turns
+# 각 발화에 그때의 카테고리를 함께 붙인다 — 한 대화에 여러 사안이 섞이므로,
+# 무엇을 몇 번 물었는지는 카테고리까지 봐야 알 수 있다.
+history = [(role, text, past["route"]) for past in turns
            for role, text in (("customer", past["question"]), ("agent", past["answer"]))]
 
 graph = build_graph(llm=llm, threshold=threshold)

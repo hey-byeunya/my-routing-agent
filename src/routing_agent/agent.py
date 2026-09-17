@@ -42,7 +42,7 @@ ESCALATE_FALLBACK_TEXT = (
 
 class AgentState(TypedDict, total=False):
     question: str
-    history: list[tuple[str, str]]
+    history: list[tuple]  # (역할, 발화) 또는 (역할, 발화, 카테고리)
     route: str
     confidence: float
     reason: str
@@ -57,28 +57,36 @@ class AgentState(TypedDict, total=False):
     trace: list[dict]
 
 
-def _history_text(history: list[tuple[str, str]] | None) -> str:
+def _history_text(history: list[tuple] | None) -> str:
+    """이력을 프롬프트에 넣을 텍스트로. 항목은 (역할, 발화) 또는 (역할, 발화, 카테고리)."""
     if not history:
         return ""
     who = {"customer": "고객", "agent": "상담원"}
-    return "\n".join(f"{who.get(role, role)}: {text}" for role, text in history if text)
+    return "\n".join(f"{who.get(item[0], item[0])}: {item[1]}" for item in history if item[1])
 
 
-def conversation_progress(history: list[tuple[str, str]] | None) -> str:
-    """이 대화에서 고객이 몇 번째로 말하고 있고, 상담원이 몇 번 안내했는지.
+def conversation_progress(history: list[tuple] | None, route: str | None = None) -> str:
+    """**같은 사안을** 몇 번째 묻고 있는지. 대화가 길다는 것과는 다르다.
 
-    정책 §10.2 는 "동일 사안 3회 이상 반복 문의"와 "반복 안내 후에도 지속"을
-    이관 조건으로 둔다. 둘 다 **세어야** 아는 것이라 파이썬이 센다. 한 대화는
-    한 사안이라고 본다 — 대화 도중 화제가 바뀌면 이 셈은 느슨해지지만, 모델이
-    긴 이력을 훑어 세는 것보다는 틀릴 여지가 적다.
+    정책 §10.2 의 이관 조건은 "동일 사안 3회 이상"이다. 한 대화에 여러 사안이
+    섞이는 것이 보통이라("편의점 접수가 안 돼요" 다음에 "방문택배 내일 오나요?"),
+    대화의 턴 수를 그대로 세면 다른 것을 물었는데도 반복 문의로 몰려 이관된다.
+    그래서 **이번 턴과 같은 카테고리인 지난 발화만** 센다.
+
+    이력에 카테고리가 없으면(옛 형식) 세지 않는다 — 모르는 채로 반복이라고
+    말하는 것보다 아무 말도 하지 않는 편이 낫다.
     """
-    if not history:
+    if not history or not route:
         return ""
-    customer = sum(1 for role, _ in history if role == "customer")
-    agent = sum(1 for role, text in history if role == "agent" and text)
-    line = f"이번이 고객의 {customer + 1}번째 발화다. 상담원은 이미 {agent}번 안내했다."
-    if customer + 1 >= 3:
-        line += " 같은 사안이 반복되고 있다면 §10.2 의 이관 기준을 검토하라."
+    tagged = [item for item in history if len(item) >= 3 and item[0] == "customer"]
+    if not tagged:
+        return ""
+    same = sum(1 for item in tagged if item[2] == route)
+    if same == 0:
+        return "이 사안은 이번 대화에서 처음 나왔다. 앞 턴이 있다고 반복 문의는 아니다."
+    line = f"고객이 이 사안({route})을 묻는 것은 이번이 {same + 1}번째다."
+    if same + 1 >= 3:
+        line += " §10.2 의 반복 문의 이관 기준을 검토하라."
     return line
 
 
@@ -178,7 +186,7 @@ def build_graph(
             tool_menu=tool_menu(route),
             history=_history_text(state.get("history")),
             question=state["question"],
-            progress=conversation_progress(state.get("history")),
+            progress=conversation_progress(state.get("history"), route),
         )
         allowed = {t.name for t in tools_for(route)}
         try:
