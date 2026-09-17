@@ -40,6 +40,18 @@ EXAMPLES = {
 }
 
 
+def close_customer_view() -> None:
+    """모달을 닫힌 것으로 표시한다.
+
+    st.dialog 는 ✕ 로 닫혔는지 알려 주지 않는다. 그래서 세션 상태만 보면 여전히
+    열린 줄 알고, 다음 실행에서 다시 띄운다 — ✕ 로 닫고 기본 화면에서 문의를
+    보내면 모달이 되살아났다. **기본 화면을 건드렸다는 것은 모달을 보고 있지
+    않다는 뜻**이므로, 그때 닫힌 것으로 본다.
+    """
+    st.session_state["customer_open"] = False
+    st.session_state.pop("customer_pending", None)
+
+
 def _default_backend_index() -> int:
     """기본 선택: URL 의 ?backend= → .env 의 AGENT_BACKEND → openai.
 
@@ -102,6 +114,7 @@ for col, (label, text) in zip(cols, EXAMPLES.items()):
     # 예시는 입력창을 채우는 대신 그대로 보낸다. 채워 놓고 지우면 방금 친 것이
     # 날아간 것처럼 보이기 때문이다.
     if col.button(label, use_container_width=True):
+        close_customer_view()
         st.session_state["pending"] = text
 
 if not turns:
@@ -297,6 +310,7 @@ with st.container(key="composer"):
     with reset:
         if st.button(":material/refresh:", help="새 대화 시작 (지금까지의 대화를 비운다)",
                      use_container_width=True, disabled=not turns):
+            close_customer_view()
             st.session_state["turns"] = []
             st.session_state.pop("pending", None)
             st.rerun()
@@ -304,6 +318,7 @@ with st.container(key="composer"):
 # 보낸 문의는 다음 실행에서 처리한다. 그래야 대화가 먼저 그려지고 입력줄이
 # 그 아래에 남는다.
 if typed:
+    close_customer_view()
     st.session_state["pending"] = typed
     st.rerun()
 
@@ -404,7 +419,7 @@ def customer_chat() -> None:
         st.session_state.pop("pending", None)
         st.rerun()
     if right.button("닫기", use_container_width=True, key="customer_close"):
-        st.session_state["customer_open"] = False
+        close_customer_view()
         st.rerun()
 
     if asked:
