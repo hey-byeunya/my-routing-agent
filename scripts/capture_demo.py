@@ -98,8 +98,34 @@ async def capture(ws_url: str, page_url: str, out: Path, timeout_s: int = 90) ->
         if not ready:
             raise RuntimeError(f"답변이 화면에 나타나지 않았다 (>{timeout_s}초): {page_url}")
 
-        await asyncio.sleep(1.0)  # 펼침 애니메이션이 끝나게
-        shot = await send("Page.captureScreenshot", {"format": "png", "captureBeyondViewport": True})
+        # 사이드바가 접힘 상태로 렌더되면 왼쪽이 잘린 채 찍힌다. 펼쳐 놓고 찍는다 —
+        # 어느 백엔드로 어떤 τ 에서 돌았는지가 캡처에 남아야 증거가 된다.
+        await send("Runtime.evaluate", {"expression": """
+            (() => {
+              const bar = document.querySelector('[data-testid="stSidebar"]');
+              if (bar) {
+                bar.style.transform = 'none';
+                bar.style.visibility = 'visible';
+                bar.setAttribute('aria-expanded', 'true');
+              }
+              const collapsed = document.querySelector('[data-testid="stSidebarCollapsedControl"]');
+              if (collapsed) collapsed.style.display = 'none';
+            })()
+        """})
+        await asyncio.sleep(1.5)  # 펼침 애니메이션이 끝나게
+
+        # 페이지가 실제로 차지한 크기를 재서 그 영역만 자른다. captureBeyondViewport
+        # 만 켜면 가로 위치가 밀려 사이드바 왼쪽이 잘린 채로 찍힌다.
+        metrics = await send("Page.getLayoutMetrics")
+        size = metrics.get("cssContentSize") or metrics.get("contentSize") or {}
+        clip = {
+            "x": 0, "y": 0,
+            "width": max(int(size.get("width", 1600)), 1200),
+            "height": min(int(size.get("height", 1400)), 4000),
+            "scale": 1,
+        }
+        shot = await send("Page.captureScreenshot",
+                          {"format": "png", "captureBeyondViewport": True, "clip": clip})
         out.write_bytes(base64.b64decode(shot["data"]))
 
 
@@ -120,7 +146,7 @@ def main() -> int:
 
     proc = subprocess.Popen(
         [chrome, "--headless=new", "--disable-gpu", "--hide-scrollbars",
-         "--window-size=1280,1600", "--remote-debugging-port=9222",
+         "--window-size=1600,1400", "--remote-debugging-port=9222",
          f"--user-data-dir={profile}", "about:blank"],
         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
     )
