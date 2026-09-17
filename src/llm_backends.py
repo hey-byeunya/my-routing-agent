@@ -494,7 +494,17 @@ def make_llm(backend: str | None = None, model: str | None = None, *, quiet: boo
     name, note = resolve_backend(backend)
     if note and not quiet:
         print(f"  [백엔드] {note}", file=sys.stderr)
-    model = model or os.environ.get("AGENT_MODEL") or DEFAULT_MODELS[name]
+    # AGENT_MODEL 은 백엔드를 가로지르지 않는다. 백엔드마다 모델 이름 체계가 달라
+    # 그대로 넘기면 "claude 에 gpt-4o-mini" 같은 일이 벌어진다. 백엔드별 값
+    # (AGENT_MODEL_CLAUDE 등)을 먼저 보고, 없으면 AGENT_BACKEND 로 지정한 그
+    # 백엔드에만 AGENT_MODEL 을 적용한다.
+    configured = (os.environ.get("AGENT_BACKEND") or "").strip().lower()
+    model = (
+        model
+        or os.environ.get(f"AGENT_MODEL_{name.upper()}")
+        or (os.environ.get("AGENT_MODEL") if name == configured else None)
+        or DEFAULT_MODELS[name]
+    )
 
     if name == "openai":
         return _openai_chat()(model=model, temperature=0, timeout=60, max_retries=1)
