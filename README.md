@@ -46,6 +46,8 @@ python scripts/check_context.py # LLM 없이 도는 점검 ①
 python -m routing_agent.agent --dry-run "제주도인데 배송비 더 붙나요?"
 ```
 
+`pip install -e .` 를 하면 `routing-agent`(한 건 실행)와 `routing-agent-eval`(평가) 명령도 함께 깔린다. `python -m routing_agent.agent` 와 같은 것이고, 아래 예시는 어느 쪽으로 써도 된다.
+
 `--dry-run` 은 LLM 을 부르지 않고 **어떤 카테고리로 가서 어떤 근거 절이 프롬프트에 들어가는지**까지만 보여 준다. 키가 하나도 없어도 여기까지는 반드시 돈다. 기록(`store/metrics.jsonl`)도 남기지 않는다 — 구경용 실행이 수치에 섞이면 안 되기 때문이다.
 
 ## 백엔드와 재생모드

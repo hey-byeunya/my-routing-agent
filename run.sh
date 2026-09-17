@@ -2,7 +2,7 @@
 # 로컬에서 바로 해보기. 인자 없이 실행하면 데모 화면을 띄운다.
 #
 #   ./run.sh              데모 (Streamlit)
-#   ./run.sh check        LLM 없이 도는 점검 세 개
+#   ./run.sh check        LLM 없이 도는 점검 네 개 (근거 매핑·조회·이관 규칙·채점기)
 #   ./run.sh ask "문의"    한 건만 터미널에서
 #   ./run.sh dry "문의"    LLM 없이 앞단만 (키 없어도 된다)
 #   ./run.sh eval         두 지표 평가 (LLM 호출 약 100회)
