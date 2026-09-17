@@ -21,7 +21,7 @@ sys.path.insert(0, str(BASE))
 
 from routing_agent import record  # noqa: E402
 from routing_agent.agent import DEFAULT_THRESHOLD, MIN_MARGIN, build_graph, called_tools  # noqa: E402
-from routing_agent.dataset import assert_split_disjoint, gold_eval_turns  # noqa: E402
+from routing_agent.dataset import assert_hard_split_disjoint, assert_split_disjoint, gold_eval_turns  # noqa: E402
 from routing_agent.grader import failure_reason, grade_turn, summarize  # noqa: E402
 from routing_agent.llm_backends import backend_of, make_llm  # noqa: E402
 from routing_agent.prompts import route_guide  # noqa: E402
@@ -132,12 +132,16 @@ def print_routing(payload: dict) -> None:
 # ---------------------------------------------------------------- 하드케이스
 
 
-def _load_hard_cases() -> list[dict]:
+def _load_hard_cases(split: str = "eval") -> list[dict]:
+    """점수는 eval 만 본다. dev 는 지침을 벼릴 때 사람이 읽는 몫이다."""
     import csv
 
     path = BASE / "data" / "hard_cases.csv"
     with path.open(encoding="utf-8-sig", newline="") as fh:
-        return list(csv.DictReader(fh))
+        rows = list(csv.DictReader(fh))
+    if split == "all":
+        return rows
+    return [r for r in rows if (r.get("split") or "eval") == split]
 
 
 # 라벨이 OTHER 지만 뜻이 "응대 범위 밖"이 아닌 유형.
@@ -431,6 +435,7 @@ def main() -> int:
     args = parser.parse_args()
 
     assert_split_disjoint()
+    assert_hard_split_disjoint()
     llm = None if args.rule_baseline else make_llm(args.backend, args.model)
     backend = "rule" if llm is None else backend_of(llm)
     # opencode 는 전역 SQLite·파일 락을 공유해 많이 띄우면 경합한다. claude 는 구독 한도가 먼저 걸린다.
