@@ -9,6 +9,7 @@ answer 옆에 같이 놓는다. 채점자가 한 화면에서 경로를 되짚�
 
 from __future__ import annotations
 
+import os
 import time
 
 import streamlit as st
@@ -42,7 +43,11 @@ choice = st.sidebar.radio(
     "LLM 백엔드",
     options=list(BACKENDS),
     format_func=lambda n: labels[BACKENDS.index(n)],
-    index=BACKENDS.index("claude"),
+    # 기본 선택은 .env 의 AGENT_BACKEND 를 따른다. 화면만 다른 백엔드를 기본으로
+    # 두면 CLI 로 잰 수치와 화면에서 보는 것이 어긋난다.
+    index=BACKENDS.index(os.environ.get("AGENT_BACKEND", "openai").strip().lower())
+    if os.environ.get("AGENT_BACKEND", "openai").strip().lower() in BACKENDS
+    else 0,
 )
 if status[choice]:
     st.sidebar.warning(f"지금 쓸 수 없다 — {status[choice]}\n\nreplay 로 대체된다.")
@@ -53,7 +58,8 @@ threshold = st.sidebar.slider(
     help="판정 확신도가 이 값 아래면 답변을 만들지 않고 담당자에게 넘긴다.",
 )
 st.sidebar.caption(
-    "τ 는 sweep 으로 정하기 전의 초기 휴리스틱이다. 값의 근거는 REPORT 에 적는다."
+    "τ 기본값 0.4 는 평가 24턴에서 0.3~0.6 을 훑어 정했다 (REPORT §4). "
+    "평가셋 위에서 훑은 값이라 그만큼 낙관적이다."
 )
 
 with st.sidebar.expander("백엔드별 상태"):
@@ -108,12 +114,21 @@ if state.get("fallback"):
 st.markdown(" · ".join(badges))
 
 # 1. 판정
-head = st.columns([1, 1, 2])
-head[0].metric("카테고리", route)
-head[1].metric("확신도", f"{confidence:.2f}", delta=f"τ={threshold:.2f}", delta_color="off")
+head = st.columns([1.2, 1, 2])
+# st.metric 은 폭이 좁으면 값을 잘라 버린다. 카테고리 이름이 잘리면 화면이
+# 증거 노릇을 못 하므로 텍스트로 쓴다.
+head[0].markdown(f"**카테고리**\n\n### {route}")
+head[1].markdown(f"**확신도**\n\n### {confidence:.2f}\n\nτ = {threshold:.2f}")
 head[2].markdown(f"**판단 근거**\n\n{state.get('reason', '')}")
-if confidence < threshold:
-    st.info(f"확신도가 τ 아래라 답변을 만들지 않고 담당자에게 넘겼다 (행동 {state.get('action')}).")
+# 게이트가 실제로 넘겼을 때만 말한다. OTHER 는 확신도와 무관하게 통과하므로
+# (정책 §10.1 — 범위 밖은 이관이 아니라 채널 안내로 끝낸다) 여기서 걸리지 않는다.
+if confidence < threshold and state.get("action") == "ESCALATE":
+    st.info(f"확신도 {confidence:.2f} 가 τ={threshold:.2f} 아래라 답변을 만들지 않고 담당자에게 넘겼다.")
+elif confidence < threshold:
+    st.info(
+        f"확신도 {confidence:.2f} 는 τ 아래지만 카테고리가 {route} 라 이관하지 않았다 — "
+        "범위 밖 문의는 담당자 이관이 아니라 채널 안내로 끝낸다 (정책 §10.1)."
+    )
 
 # 4. 답변 — 화면에서는 결론을 먼저 보여 준다
 st.subheader("답변")
