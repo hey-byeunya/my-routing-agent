@@ -19,6 +19,7 @@ import os
 import time
 
 import streamlit as st
+import streamlit.components.v1 as components
 from dotenv import load_dotenv
 from langchain_core.messages import AIMessage, ToolMessage
 
@@ -182,45 +183,61 @@ if params.get("q") and params.get("run", "") in ("1", "true", "yes") and not st.
     st.session_state["pending"] = params["q"]
     st.session_state["url_sent"] = True
 
-question = st.session_state.pop("pending", None)
+def run_turn(question: str, spinner: str | None = None) -> dict | None:
+    """한 턴을 돌려 turns 에 붙인다. 개발자 화면과 고객용 모달이 함께 쓴다.
 
-if question:
-    with st.chat_message("user"):
-        st.write(question)
-
+    두 화면이 **같은 함수**를 불러야 "고객이 본 답"과 "채점자가 되짚는 경로"가
+    같아진다. 화면마다 따로 돌리면 어느 쪽이 진짜인지 알 수 없게 된다.
+    """
     try:
         llm = make_llm(choice, model or None, quiet=True)
     except BackendError as exc:
         st.error(f"백엔드를 준비하지 못했다 — {exc}")
-        st.stop()
+        return None
 
     # 앞선 턴이 이력이 된다. 이것이 없으면 §10.2(반복 문의 이관)가 성립하지 않는다.
     # 각 발화에 그때의 카테고리를 함께 붙인다 — 한 대화에 여러 사안이 섞이므로,
     # 무엇을 몇 번 물었는지는 카테고리까지 봐야 알 수 있다.
-    history = [(role, text, past["route"]) for past in turns
+    past_turns = st.session_state.get("turns", [])
+    history = [(role, text, past["route"]) for past in past_turns
                for role, text in (("customer", past["question"]), ("agent", past["answer"]))]
 
     graph = build_graph(llm=llm, threshold=threshold)
+    started = time.monotonic()
+    with st.spinner(spinner or f"{graph.backend_name} 로 파이프라인을 돌리는 중…"):
+        state = graph.invoke({"question": question, "history": history, "messages": [], "trace": []})
+    turn = {
+        "question": question,
+        "answer": state.get("answer", ""),
+        "state": state,
+        "route": state.get("route", "?"),
+        "confidence": state.get("confidence", 0.0) or 0.0,
+        "tools": called_tools(state),
+        "elapsed": time.monotonic() - started,
+        "backend": graph.backend_name,
+        "backend_note": f"`{choice}` 대신 돌았다" if graph.backend_name != choice else "",
+        "threshold": threshold,
+    }
+    st.session_state["turns"] = [*past_turns, turn]
+    return turn
+
+
+question = st.session_state.pop("pending", None)
+
+# 고객용 모달이 열려 있으면 처리도 모달 안에서 한다. 본문에서 돌리면 답을 만드는
+# 동안(백엔드에 따라 수십 초) 모달이 그려지지 않아 **화면이 닫힌 것처럼 보인다.**
+if question and st.session_state.get("customer_open"):
+    st.session_state["customer_pending"] = question
+    question = None
+
+if question:
+    with st.chat_message("user"):
+        st.write(question)
     with st.chat_message("assistant"):
-        started = time.monotonic()
-        with st.spinner(f"{graph.backend_name} 로 파이프라인을 돌리는 중…"):
-            state = graph.invoke(
-                {"question": question, "history": history, "messages": [], "trace": []}
-            )
-        turn = {
-            "question": question,
-            "answer": state.get("answer", ""),
-            "state": state,
-            "route": state.get("route", "?"),
-            "confidence": state.get("confidence", 0.0) or 0.0,
-            "tools": called_tools(state),
-            "elapsed": time.monotonic() - started,
-            "backend": graph.backend_name,
-            "backend_note": f"`{choice}` 대신 돌았다" if graph.backend_name != choice else "",
-            "threshold": threshold,
-        }
-        turns = [*turns, turn]
-        st.session_state["turns"] = turns
+        turn = run_turn(question)
+        if turn is None:
+            st.stop()
+        turns = st.session_state["turns"]
         st.write(turn["answer"])
         draw_detail(turn)
 
@@ -319,8 +336,14 @@ st.markdown(
         color: rgb(255, 255, 255);
       }
       .st-key-customer_fab .stButton button:hover { filter: brightness(0.93); }
-      /* 모달 안에서는 대화만 보이게 한다. */
-      .st-key-customer_thread { max-height: 52vh; overflow-y: auto; }
+      /* 모달 안에서는 대화만 보이게 한다. 대화가 길어지면 이 칸만 스크롤하고
+         입력칸과 버튼은 늘 제자리에 있게 한다 — 모달 전체가 늘어나면 입력칸이
+         화면 밖으로 밀려 내려가 보낸 뒤 답을 보려면 다시 스크롤해야 한다. */
+      .st-key-customer_thread {
+        max-height: 55vh; min-height: 22vh; overflow-y: auto;
+        scroll-behavior: smooth;
+        padding-right: 6px;
+      }
     </style>
     """,
     unsafe_allow_html=True,
@@ -341,6 +364,38 @@ def customer_chat() -> None:
             st.chat_message("user").write(past["question"])
             st.chat_message("assistant").write(past["answer"])
 
+        # 답을 만드는 동안에도 모달이 떠 있어야 한다. 본문에서 돌리면 그 사이
+        # 모달이 그려지지 않아 화면이 닫힌 것처럼 보인다.
+        waiting = st.session_state.pop("customer_pending", None)
+        if waiting:
+            st.chat_message("user").write(waiting)
+            with st.chat_message("assistant"):
+                turn = run_turn(waiting, spinner="확인하고 있습니다…")
+            if turn is not None:
+                st.rerun()
+
+    # 새 답변이 붙으면 대화 칸을 맨 아래로 내린다. 안 그러면 답이 접힌 영역
+    # 아래에 생겨 고객이 직접 스크롤해야 방금 받은 답을 볼 수 있다.
+    #
+    # st.markdown 의 <script> 는 실행되지 않는다. components.html 은 iframe 안에서
+    # 실제로 돌므로 window.parent 로 본 문서를 잡는다. 높이 0 이라 자리를 먹지 않는다.
+    components.html(
+        f"""
+        <script>
+          (function () {{
+            const mark = "{len(thread)}";
+            const doc = window.parent.document;
+            const box = doc.querySelector(".st-key-customer_thread");
+            if (!box || box.dataset.at === mark) return;
+            box.dataset.at = mark;
+            // 렌더가 끝난 뒤에 내려야 scrollHeight 가 제값이 된다.
+            requestAnimationFrame(() => {{ box.scrollTop = box.scrollHeight; }});
+          }})();
+        </script>
+        """,
+        height=0,
+    )
+
     asked = st.chat_input("무엇을 도와드릴까요?", key="customer_input")
 
     left, right = st.columns([1, 1])
@@ -353,9 +408,7 @@ def customer_chat() -> None:
         st.rerun()
 
     if asked:
-        # 처리는 본문이 한다. 모달은 결과를 보여 주기만 한다 — 두 화면이 같은
-        # 파이프라인을 타야 "고객이 본 답"과 "채점자가 되짚는 경로"가 같아진다.
-        st.session_state["pending"] = asked
+        st.session_state["customer_pending"] = asked
         st.rerun()
 
 
