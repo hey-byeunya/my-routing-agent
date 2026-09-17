@@ -287,5 +287,45 @@
   "out_of_scope": {
     "examples": ["오프라인 매장 위치·운영시간 문의", "타 채널(오픈마켓 등)에서 발생한 주문/결제 자체에 대한 처리", "입점·채용·세금계산서 발행 부서 연락처 등 일반 상담 범위 밖 행정 문의"],
     "standard_reply": "해당 문의는 저희가 도와드리기 어려운 부분입니다. 관련 부서 또는 채널로 문의해 주셔야 확인이 가능합니다."
+  },
+
+  "$reservations_note": "아래 예약·배송 레코드는 answer_goldenset.json 의 rubric 이 '조회 결과(합성)'으로 명시한 값을 그대로 옮긴 것이다. 정답셋이 전제하는 조회 결과라 여기에 둬야 도구가 정답셋과 맞물린다. 실제 데이터가 아니다.",
+  "reservations": {
+    "R-88213": {
+      "service": "VISIT_PICKUP",
+      "carrier": "롯데택배",
+      "status": "집하지연_재방문예정",
+      "status_text": "어제 집하가 지연되어 오늘 재방문 예정으로 등록되어 있음",
+      "next_action": "오늘 중 재방문 예정. 방문 전 문자 안내 발송",
+      "cancelable": false,
+      "tracking_number": null
+    },
+    "R-90410": {
+      "service": "VISIT_PICKUP",
+      "carrier": "한진택배",
+      "status": "택배사접수전",
+      "status_text": "아직 택배사 접수 전 상태",
+      "next_action": "접수 전이므로 취소 가능. 단 고객 동의를 받은 뒤 진행",
+      "cancelable": true,
+      "tracking_number": null
+    },
+    "R-77120": {
+      "service": "CVS_PICKUP",
+      "carrier": "GS편의점택배",
+      "status": "접수대기",
+      "status_text": "GS편의점택배로 예약되어 있음",
+      "next_action": "예약한 브랜드(GS) 매장에서 접수해야 예약번호가 조회됨",
+      "cancelable": true,
+      "tracking_number": null
+    }
+  },
+
+  "tracking": {
+    "123456789": {
+      "status": "수거전",
+      "status_text": "운송장은 발급됐으나 택배사가 아직 수거하지 않은 상태",
+      "next_action": "수거 후 택배사 전산에 등록되면 조회 가능",
+      "reservation_id": null
+    }
   }
 }
