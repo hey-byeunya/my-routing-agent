@@ -1,8 +1,8 @@
 {
   "$comment": "택배중계서비스 목 데이터 v1.0 — 교육용. 특정 업체명·서비스명은 포함하지 않으며, 공개된 FAQ 페이지에 게시된 운임·정책 스냅샷을 일반화해 정리했다. 에이전트 툴이 조회해 반환하는 값으로 사용한다. 소호사업자택배의 월별 운임구간처럼 FAQ에 구체적 수치가 없는 항목은 실제 값을 만들어내지 않고 '어드민/제휴사 조회 필요'로 표시했다.",
   "version": "1.0",
-  "as_of_date": "2026-09-16",
-  "source_note": "운임은 공개 FAQ에 게시된 스냅샷이며 실제 예약 화면의 최종 운임과 다를 수 있다. 프로모션·택배사 정책 변경으로 수시로 바뀌므로, 상담 시에는 이 값을 참고만 하고 예약 화면(또는 연동 API)의 현재 값을 우선한다.",
+  "as_of_date": "2026-09-18",
+  "source_note": "운임은 공개 FAQ에 게시된 스냅샷이며 실제 예약 화면의 최종 운임과 다를 수 있다. 프로모션·택배사 정책 변경으로 수시로 바뀌므로, 상담 시에는 이 값을 참고만 하고 예약 화면(또는 연동 API)의 현재 값을 우선한다. 방문택배·편의점택배 구간은 2026-09-18 공개 운임표로 갱신했다.",
   "services": {
     "RESERVE_GENERAL": {
       "label": "택배예약 공통 안내",
@@ -85,22 +85,22 @@
           {
             "max_weight_kg": 2,
             "max_size_cm": 60,
-            "fee": 3800
+            "fee": 4000
           },
           {
             "max_weight_kg": 5,
             "max_size_cm": 80,
-            "fee": 4200
+            "fee": 4400
           },
           {
             "max_weight_kg": 20,
             "max_size_cm": 140,
-            "fee": 4950
+            "fee": 5000
           },
           {
             "max_weight_kg": 20,
             "max_size_cm": 160,
-            "fee": 5950
+            "fee": 6000
           }
         ],
         "jeju_surcharge": 3000,
@@ -136,7 +136,7 @@
         "tiers": [
           {
             "max_weight_kg": 5,
-            "max_size_cm": 80,
+            "max_size_cm": 100,
             "fee": 4300
           },
           {
@@ -147,7 +147,7 @@
           {
             "max_weight_kg": 20,
             "max_size_cm": 160,
-            "fee": 5990
+            "fee": 6000
           },
           {
             "max_weight_kg": 25,
@@ -166,9 +166,9 @@
             "fee": 5000
           }
         ],
-        "jeju_surcharge": null,
-        "island_surcharge": null,
-        "note": "FAQ에는 5kg/80cm 이하 구간만 공개되어 있다. 다른 구간·지역 할증은 예약 화면에서 확인 필요."
+        "jeju_surcharge": 0,
+        "island_surcharge": 0,
+        "note": "공개된 구간은 5kg/80cm 이하 하나뿐이다. 제주·도서지역 할증운임은 없다."
       }
     },
     "bulk_discount": {
@@ -329,12 +329,12 @@
           {
             "max_weight_kg": 2,
             "max_size_cm": 80,
-            "fee": 3490
+            "fee": 3500
           },
           {
             "max_weight_kg": 5,
             "max_size_cm": 80,
-            "fee": 3750
+            "fee": 3800
           },
           {
             "max_weight_kg": 20,
@@ -355,12 +355,12 @@
           {
             "max_weight_kg": 2,
             "max_size_cm": 80,
-            "fee": 3490
+            "fee": 3500
           },
           {
             "max_weight_kg": 5,
             "max_size_cm": 80,
-            "fee": 3750
+            "fee": 3800
           },
           {
             "max_weight_kg": 20,
@@ -381,12 +381,12 @@
           {
             "max_weight_kg": 2,
             "max_size_cm": 80,
-            "fee": 3490
+            "fee": 3500
           },
           {
             "max_weight_kg": 5,
             "max_size_cm": 80,
-            "fee": 3750
+            "fee": 3800
           },
           {
             "max_weight_kg": 20,
@@ -403,13 +403,13 @@
             "max_weight_kg": 20,
             "max_size_cm": 160,
             "zone": "동일권",
-            "fee": 3070
+            "fee": 3400
           },
           {
             "max_weight_kg": 20,
             "max_size_cm": 160,
             "zone": "타권",
-            "fee": 3470
+            "fee": 3900
           }
         ],
         "jeju_surcharge": 3000,
@@ -452,11 +452,11 @@
           {
             "max_weight_kg": 5,
             "max_size_cm": 80,
-            "fee": 1800
+            "fee": 1980
           }
         ],
-        "jeju_surcharge": null,
-        "island_availability_note": "FAQ에 지역 할증 관련 내용이 없어 미기재로 둔다. 확인 후 안내."
+        "jeju_surcharge": 3000,
+        "island_availability_note": "도서지역 관련 내용은 공개되어 있지 않다. 확인 후 안내."
       }
     }
   },

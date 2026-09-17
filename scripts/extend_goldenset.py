@@ -197,6 +197,10 @@ NEW_CONVERSATIONS = [
 
 # 채점기 자체 검증(scripts/check_grader.py)이 잡아낸 정답셋 결함을 고친다.
 # 모범 답안이 자기 기준을 못 넘기면 그 기준이 틀린 것이다.
+WHY_RATES = (
+    "2026-09-18 공개 운임표로 mockdata 의 방문택배·편의점택배 구간을 갱신했다. 모범 답안이 옛 금액을 말하고 있으면 check_grader 가 먼저 걸린다 — 수치를 올리려 기준을 바꾼 것이 아니라 조회 결과가 달라진 것이다."
+)
+
 PATCHES = [
     {
         "conv_id": "C-010",
@@ -232,6 +236,96 @@ PATCHES = [
             "mockdata bulk_discount 는 수량별 상품 목록이다). 조회 도구도 carrier 를 받지 않는다. "
             "택배사를 되물으라는 기준은 모범 답안 자신도 지키지 않는다."
         ),
+    },
+    {
+        "conv_id": "C-001",
+        "turn": 2,
+        "replace_expect": {
+            "action": "ASK",
+            "tools": [],
+            "must_ask": [
+                "이용하실 서비스(방문택배/편의점택배/다량할인택배 등)",
+                "택배사",
+                "박스 크기와 중량",
+            ],
+            "must": [],
+            "forbid": ["4000", "4,000원"],
+            "rubric": "서비스·택배사·규격을 모르면 운임을 특정할 수 없다. 임의 금액을 먼저 제시하면 실패. (금지 금액은 4턴에서 조회될 값이다 — 운임표 갱신으로 3,800 → 4,000 이 됐다.)",
+            "reference": "이용하실 서비스와 택배사, 박스 크기·중량을 알려주시면 정확한 운임을 확인해 드리겠습니다.",
+        },
+        "why": WHY_RATES,
+    },
+    {
+        "conv_id": "C-001",
+        "turn": 4,
+        "replace_expect": {
+            "action": "ANSWER",
+            "tools": ["get_visit_rate"],
+            "tool_args": {"get_visit_rate": {"carrier": "롯데택배", "weight_kg": 2, "size_cm": 60}},
+            "must": ["4000"],
+            "forbid": [],
+            "rubric": "mockdata carriers.visit_pickup.롯데택배 tiers[0].fee=4000 을 그대로 사용.",
+            "reference": "롯데택배 방문택배 기준 2kg·60cm 이하 구간은 4,000원입니다. 제주는 3,000원, 도서지역은 5,000원의 추가운임이 붙습니다.",
+        },
+        "why": WHY_RATES,
+    },
+    {
+        "conv_id": "N-001",
+        "turn": 2,
+        "replace_expect": {
+            "action": "ASK",
+            "tools": [],
+            "must_ask": [
+                "이용하실 서비스(방문택배/편의점택배/다량할인택배)",
+                "박스 크기와 중량",
+            ],
+            "must": [],
+            "forbid": ["3900", "3,900원", "가장 저렴한 곳은"],
+            "rubric": "정책 §0 원칙1: 최종 운임은 건별 상이 항목이다. 서비스와 규격을 모르면 최저가를 특정할 수 없다. 금액을 먼저 제시하면 실패.",
+            "reference": "이용하실 서비스와 박스 크기·중량을 알려주시면 택배사별 운임을 비교해 안내드리겠습니다.",
+        },
+        "why": WHY_RATES,
+    },
+    {
+        "conv_id": "N-001",
+        "turn": 4,
+        "replace_expect": {
+            "action": "ANSWER",
+            "tools": ["get_visit_rate"],
+            "tool_args": {"get_visit_rate": {"carrier": "한진택배", "weight_kg": 2, "size_cm": 60}},
+            "must": ["3900", "한진택배"],
+            "forbid": ["2990", "3500"],
+            "rubric": "방문택배로 좁혀졌으므로 택배사별 구간을 조회해 비교한다. mockdata carriers.visit_pickup 2kg/60cm 기준 한진 3900 < 롯데 4000 — 운임표 갱신으로 **더 싼 쪽이 바뀌었다**(옛 값은 롯데 3800 < 한진 3900). forbid 의 2990 은 다량할인, 3500 은 편의점택배 값으로, 서비스를 혼동했을 때 나오기 쉬운 수치다.",
+            "reference": "방문택배 2kg·세 변 합 60cm 기준으로는 한진택배가 3,900원으로 가장 저렴하고 롯데택배가 4,000원입니다. 제주·도서지역은 추가운임이 붙으며, 확정 금액은 예약 화면에서 확인해 주세요.",
+        },
+        "why": WHY_RATES,
+    },
+    {
+        "conv_id": "N-003",
+        "turn": 4,
+        "replace_expect": {
+            "action": "ANSWER",
+            "tools": ["get_cvs_rate"],
+            "tool_args": {"get_cvs_rate": {"brand": "CU편의점택배", "weight_kg": 2, "size_cm": 80, "region": "제주"}},
+            "must": ["3500", "3000"],
+            "forbid": ["4200", "3100"],
+            "rubric": "mockdata carriers.cvs_pickup.CU편의점택배 2kg/80cm = 3500, jeju_surcharge = 3000. forbid 의 4200 은 20kg/140cm 구간, 3100 은 0.5kg 구간으로, 규격을 확인하지 않고 집었을 때 나오기 쉬운 값이다.",
+            "reference": "CU편의점택배 기준 2kg·세 변 합 80cm 이하는 3,500원이며, 제주 지역은 3,000원의 추가운임이 붙습니다. 확정 금액은 예약 화면에서 확인해 주세요.",
+        },
+        "why": WHY_RATES,
+    },
+    {
+        "conv_id": "N-006",
+        "turn": 2,
+        "replace_expect": {
+            "action": "ANSWER",
+            "tools": [],
+            "must": ["로그인", "예약"],
+            "forbid": ["4000", "예약번호를 알려주시면"],
+            "rubric": "정책 §2: 예약은 로그인 후 예약 메뉴에서 시작한다. 처음 이용 문의는 경로 안내로 끝낸다. 운임·상태 조회는 필요 없다.",
+            "reference": "앱이나 웹에 로그인하신 뒤 예약 메뉴에서 서비스를 고르시면 예약이 시작됩니다. 서비스 선택부터 결제까지 화면 안내를 따라가시면 됩니다.",
+        },
+        "why": WHY_RATES,
     },
 ]
 

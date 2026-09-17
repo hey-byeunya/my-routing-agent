@@ -78,8 +78,10 @@ def main() -> int:
     ctx = build_context("VISIT_PICKUP")
     tool_out = ['{"carrier": "한진택배", "fee": 5000}']
 
-    v_bad = check_guardrail("한진택배 기본 운임은 6,000원입니다.", tool_out, ctx, said="")
-    check("조회 결과에 없는 금액을 잡는다", not v_bad["ok"] and 6000 in v_bad["unsupported"],
+    # 근거 어디에도 없는 값이어야 한다. 6,000 을 쓰다가 운임표 갱신으로 그 값이
+    # §4.1 에 생기면서 픽스처가 먼저 깨졌다 — 검사가 아니라 예시가 낡은 것이다.
+    v_bad = check_guardrail("한진택배 기본 운임은 7,700원입니다.", tool_out, ctx, said="")
+    check("조회 결과에 없는 금액을 잡는다", not v_bad["ok"] and 7700 in v_bad["unsupported"],
           str(v_bad["unsupported"]))
 
     v_ok = check_guardrail("한진택배 기본 운임은 5,000원입니다.", tool_out, ctx, said="")

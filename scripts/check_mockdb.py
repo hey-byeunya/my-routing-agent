@@ -26,7 +26,7 @@ def main() -> int:
 
     # ── 이름 해석 ────────────────────────────────────────────────
     exact = mockdb.get_cvs_rate("CU편의점택배", 2, 80, "제주")
-    check("정확한 상품명은 그대로 조회된다", exact.get("fee") == 3490, str(exact)[:120])
+    check("정확한 상품명은 그대로 조회된다", exact.get("fee") == 3500, str(exact)[:120])
     check("지역 할증이 함께 온다", exact.get("region_surcharge", {}).get("surcharge") == 3000)
 
     partial = mockdb.get_cvs_rate("CU", 2, 80, "제주")
@@ -35,7 +35,7 @@ def main() -> int:
     check("후보마다 운임이 함께 온다 (고를 근거)", all(isinstance(f, int) for f in fees) and len(fees) >= 2)
 
     one = mockdb.get_visit_rate("롯데", 2, 60)
-    check("후보가 하나면 그 상품으로 조회된다", one.get("carrier") == "롯데택배" and one.get("fee") == 3800)
+    check("후보가 하나면 그 상품으로 조회된다", one.get("carrier") == "롯데택배" and one.get("fee") == 4000)
 
     unknown = mockdb.get_cvs_rate("없는브랜드", 2, 80)
     check("모르는 이름은 후보 목록과 함께 오류", "error" in unknown and unknown.get("available"))
