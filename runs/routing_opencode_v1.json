@@ -1,0 +1,373 @@
+{
+  "task": "routing",
+  "metrics": {
+    "n": 36,
+    "errors": 0,
+    "accuracy": 0.8611111111111112,
+    "elapsed_s": 1200.0,
+    "macro_f1": 0.8612720612720612,
+    "report": "                 precision    recall  f1-score   support\n\nRESERVE_GENERAL       0.75      1.00      0.86         6\n   VISIT_PICKUP       0.86      1.00      0.92         6\n     CVS_PICKUP       1.00      0.67      0.80         6\n       BIZ_BULK       1.00      0.83      0.91         6\n  SPEC_SHIPPING       0.71      0.83      0.77         6\n          OTHER       1.00      0.83      0.91         6\n\n       accuracy                           0.86        36\n      macro avg       0.89      0.86      0.86        36\n   weighted avg       0.89      0.86      0.86        36\n",
+    "confusion": {
+      "labels": [
+        "RESERVE_GENERAL",
+        "VISIT_PICKUP",
+        "CVS_PICKUP",
+        "BIZ_BULK",
+        "SPEC_SHIPPING",
+        "OTHER"
+      ],
+      "matrix": [
+        [
+          6,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          6,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          1,
+          4,
+          0,
+          1,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          5,
+          1,
+          0
+        ],
+        [
+          1,
+          0,
+          0,
+          0,
+          5,
+          0
+        ],
+        [
+          1,
+          0,
+          0,
+          0,
+          0,
+          5
+        ]
+      ]
+    }
+  },
+  "results": [
+    {
+      "qa_id": "400002",
+      "question": "회원가입 안 해도 택배 예약할 수 있나요?",
+      "gold": "RESERVE_GENERAL",
+      "pred": "RESERVE_GENERAL",
+      "confidence": 0.95,
+      "reason": "회원가입 여부 문의는 서비스를 특정하지 않은 채 예약 방법·가입 과정을 묻는 것으로, 진입 단계 문의에 해당한다."
+    },
+    {
+      "qa_id": "400004",
+      "question": "가장 싸게 보내는 방법이 뭔가요?",
+      "gold": "RESERVE_GENERAL",
+      "pred": "RESERVE_GENERAL",
+      "confidence": 0.95,
+      "reason": "서비스가 특정되지 않은 채 요금(가장 저렴한 방법)만 묻는 문의로, RESERVE_GENERAL 카테고리에 해당합니다."
+    },
+    {
+      "qa_id": "400007",
+      "question": "택배요금이 대체 얼마인가요?",
+      "gold": "RESERVE_GENERAL",
+      "pred": "RESERVE_GENERAL",
+      "confidence": 0.95,
+      "reason": "서비스가 특정되지 않은 채 값(요금)만 묻는 문의로, RESERVE_GENERAL 분류에 해당함"
+    },
+    {
+      "qa_id": "400010",
+      "question": "결제는 어떤 방식으로 하나요?",
+      "gold": "RESERVE_GENERAL",
+      "pred": "RESERVE_GENERAL",
+      "confidence": 0.9,
+      "reason": "결제 방법 문의는 서비스가 특정되지 않은 채 요금(값)만 묻는 경우에 해당하며, RESERVE_GENERAL 카테고리에 명확히 포함된다."
+    },
+    {
+      "qa_id": "400012",
+      "question": "예약하고 나서 언제 확정되나요?",
+      "gold": "RESERVE_GENERAL",
+      "pred": "RESERVE_GENERAL",
+      "confidence": 0.88,
+      "reason": "서비스 구분 없이 예약 후 확인 시점을 묻는 일반적인 문의로, '서비스가 특정되지 않은 채 값(요금·기간)만 묻는 문의는 RESERVE_GENERAL' 규칙에 해당"
+    },
+    {
+      "qa_id": "400015",
+      "question": "예약 화면에서 자꾸 오류가 나요.",
+      "gold": "RESERVE_GENERAL",
+      "pred": "RESERVE_GENERAL",
+      "confidence": 0.5,
+      "reason": "예약 화면 오류 문의로 서비스 종류가 명시되지 않아 RESERVE_GENERAL로 분류"
+    },
+    {
+      "qa_id": "400018",
+      "question": "박스 한 개만 있어도 방문해주시나요?",
+      "gold": "VISIT_PICKUP",
+      "pred": "VISIT_PICKUP",
+      "confidence": 0.9,
+      "reason": "방문택배 서비스 이용 시 박스 개수와 관계없이 방문 여부 문의"
+    },
+    {
+      "qa_id": "400019",
+      "question": "몇 시쯤 방문하는지 정확히 알 수 있나요?",
+      "gold": "VISIT_PICKUP",
+      "pred": "VISIT_PICKUP",
+      "confidence": 0.9,
+      "reason": "방문 일정 문의로, VISIT_PICKUP 카테고리는 기사 방문 수거 전제 하에 방문 일정 관련 문의를 다루므로 직접적인 매핑"
+    },
+    {
+      "qa_id": "400022",
+      "question": "집 앞에 두면 그냥 가져가시나요, 직접 받아야 하나요?",
+      "gold": "VISIT_PICKUP",
+      "pred": "VISIT_PICKUP",
+      "confidence": 0.4,
+      "reason": "방문택배 서비스 이용 시 문 앞 투입 가능 여부와 직접 수령 필요 여부에 관한 문의로, 방문 일정 및 수거 방법과 관련이 있다"
+    },
+    {
+      "qa_id": "400024",
+      "question": "방문 날짜를 다시 바꿀 수 있나요?",
+      "gold": "VISIT_PICKUP",
+      "pred": "VISIT_PICKUP",
+      "confidence": 0.85,
+      "reason": "방문 날짜 변경을 문의한 것으로, VISIT_PICKUP 카테고리에 명시된 '방문 일정' 관련 문의에 해당한다."
+    },
+    {
+      "qa_id": "400026",
+      "question": "제주도인데 방문택배 가능한가요?",
+      "gold": "VISIT_PICKUP",
+      "pred": "VISIT_PICKUP",
+      "confidence": 0.8,
+      "reason": "문의가 직접적으로 '방문택배' 서비스를 묻고 있으며, 제주도 위치 여부와 관련이 있어 VISIT_PICKUP 카테고리로 분류"
+    },
+    {
+      "qa_id": "400028",
+      "question": "여러 박스도 방문택배로 한 번에 되나요?",
+      "gold": "VISIT_PICKUP",
+      "pred": "VISIT_PICKUP",
+      "confidence": 0.4,
+      "reason": "방문택배 서비스를 전제로 하며 여러 박스 가능 여부를 묻고 있어 VISIT_PICKUP으로 분류했으나, 여러 박스 문의가 BIZ_BULK와도 연관되어 있어 확신도를 낮춤"
+    },
+    {
+      "qa_id": "400032",
+      "question": "예약 안 하고 그냥 편의점 가서 접수해도 되나요?",
+      "gold": "CVS_PICKUP",
+      "pred": "CVS_PICKUP",
+      "confidence": 0.95,
+      "reason": "편의점 직접 접수와 관련된 문의로, '편의점택배는 아무 편의점에나 가져가면 되나요?'와 동일한 의미이며CVS_PICKUP 카테고리에 직접 부합함"
+    },
+    {
+      "qa_id": "400033",
+      "question": "편의점에서 제 예약번호가 안 뜬대요.",
+      "gold": "CVS_PICKUP",
+      "pred": "CVS_PICKUP",
+      "confidence": 0.95,
+      "reason": "편의점에서 예약번호가 표시되지 않는 문의로, 편의점택배(CVS_PICKUP) 카테고리에 직접적으로 해당합니다."
+    },
+    {
+      "qa_id": "400034",
+      "question": "방문택배랑 편의점택배 중에 뭐가 나을까요?",
+      "gold": "CVS_PICKUP",
+      "pred": "VISIT_PICKUP",
+      "confidence": 0.3,
+      "reason": "방문택배와 편의점택배를 비교하는 문의로, 양 서비스 모두 언급되어 VISIT_PICKUP을 closest code로 선정했으나 서비스 비교 문맥으로 확신도 낮춤"
+    },
+    {
+      "qa_id": "400037",
+      "question": "제주도에 사는데 편의점택배 되나요?",
+      "gold": "CVS_PICKUP",
+      "pred": "CVS_PICKUP",
+      "confidence": 0.8,
+      "reason": "편의점택배 서비스 문의이며 제주도 지역 적용 여부가 포함되어 있으나 핵심 서비스는 CVS_PICKUP과 직접 관련 있다"
+    },
+    {
+      "qa_id": "400038",
+      "question": "도서지역인데 편의점택배로 보낼 수 있나요?",
+      "gold": "CVS_PICKUP",
+      "pred": "SPEC_SHIPPING",
+      "confidence": 0.6,
+      "reason": "원격지(도서지역) 배송 가능 여부는 서비스 구분 없이 배송 문의로 분류되며, 규격·배송·취소·반입제한은 SPEC_SHIPPING 로 통일된다."
+    },
+    {
+      "qa_id": "400040",
+      "question": "편의점 가져가기 전에 뭘 준비해야 하나요?",
+      "gold": "CVS_PICKUP",
+      "pred": "CVS_PICKUP",
+      "confidence": 0.95,
+      "reason": "문의가 편의점택배와 직접 관련되며, 편의점 이용 전 준비사항을 묻고 있어 CVS_PICKUP 카테고리에 명확히 해당한다."
+    },
+    {
+      "qa_id": "400043",
+      "question": "최소 몇 박스부터 다량할인택배가 되나요?",
+      "gold": "BIZ_BULK",
+      "pred": "BIZ_BULK",
+      "confidence": 0.85,
+      "reason": "다량할인택배의 최소 박스 수량 문의로, 사업자·대량 발송 카테고리에 직접적으로 해당한다."
+    },
+    {
+      "qa_id": "400047",
+      "question": "받는 사람이 여러 명이면 어떻게 입력하나요?",
+      "gold": "BIZ_BULK",
+      "pred": "SPEC_SHIPPING",
+      "confidence": 0.65,
+      "reason": "수신인 입력 방법 문의는 특정 서비스와 무관하게 waybill 양식 기입과 관련된 일반적인 배송 프로세스 질문에 해당하며, 규격 측정·배송조회·예약번호 입력 등과 동일한 SPEC_SHIPPING 카테고리에 속한다."
+    },
+    {
+      "qa_id": "400052",
+      "question": "다량할인택배도 방문수거 해주나요?",
+      "gold": "BIZ_BULK",
+      "pred": "BIZ_BULK",
+      "confidence": 0.3,
+      "reason": "다량할인 서비스의 방문수거 가능 여부를 문의한 것으로, BIZ_BULK(대량 할인 서비스)와 직접 연관되지만 방문수거(VISIT_PICKUP) 요소도 포함되어 있어 확신도를 낮춤"
+    },
+    {
+      "qa_id": "400058",
+      "question": "집하주소는 꼭 등록해야 하나요?",
+      "gold": "BIZ_BULK",
+      "pred": "BIZ_BULK",
+      "confidence": 0.8,
+      "reason": "집하주소 등록은 사업자·대량 발송(BIZ_BULK) 카테고리에 포함된 절차로, 사업자 인증 기반 정기 발송 및 쇼핑몰 주문 연동과 연관된다."
+    },
+    {
+      "qa_id": "400062",
+      "question": "발송량이 적어도 신청할 수 있나요?",
+      "gold": "BIZ_BULK",
+      "pred": "BIZ_BULK",
+      "confidence": 0.7,
+      "reason": "This inquiry about minimum dispatch volume for application directly relates to the monthly dispatch volume conditions (월 발송량 조건) specified in the BIZ_BULK category for SOHO business owners."
+    },
+    {
+      "qa_id": "400068",
+      "question": "반품 접수도 여기서 관리되나요?",
+      "gold": "BIZ_BULK",
+      "pred": "BIZ_BULK",
+      "confidence": 0.6,
+      "reason": "Return receipt management is explicitly mentioned as part of BIZ_BULK category for seller's bulk inquiries, including order collection and return processing management"
+    },
+    {
+      "qa_id": "400074",
+      "question": "운송장번호가 있는데 배송조회가 안 돼요.",
+      "gold": "SPEC_SHIPPING",
+      "pred": "SPEC_SHIPPING",
+      "confidence": 0.95,
+      "reason": "배송조회 문의는 서비스 종류와 무관한 공통 사항으로 SPEC_SHIPPING 카테고리에 해당한다."
+    },
+    {
+      "qa_id": "400075",
+      "question": "예약번호랑 운송장번호랑 같은 건가요?",
+      "gold": "SPEC_SHIPPING",
+      "pred": "SPEC_SHIPPING",
+      "confidence": 1.0,
+      "reason": "예약번호와 운송장번호는 서비스 종류와 무관한 공통 문의로, SPEC_SHIPPING 카테고리에 해당한다"
+    },
+    {
+      "qa_id": "400076",
+      "question": "예약 취소하고 싶은데 가능한가요?",
+      "gold": "SPEC_SHIPPING",
+      "pred": "SPEC_SHIPPING",
+      "confidence": 0.95,
+      "reason": "예약 취소 문의는 서비스가 특정되지 않은 채 취소 방법만 묻는 경우로, SPEC_SHIPPING 카테고리에 포함되며 '예약 취소·주소 변경·반입 제한 물품'에 해당한다."
+    },
+    {
+      "qa_id": "400078",
+      "question": "예약한 것보다 물건이 더 크면 어떻게 되나요?",
+      "gold": "SPEC_SHIPPING",
+      "pred": "SPEC_SHIPPING",
+      "confidence": 0.85,
+      "reason": "예약된 아이템 크기 제한과 관련이 있으며, 규격·배송조회·취소·반입제한은 서비스와 무관하게 SPEC_SHIPPING 로 분류된다고 명시된 규칙에 따라 분류한다."
+    },
+    {
+      "qa_id": "400079",
+      "question": "현금도 택배로 보낼 수 있나요?",
+      "gold": "SPEC_SHIPPING",
+      "pred": "RESERVE_GENERAL",
+      "confidence": 0.35,
+      "reason": "현금 송금 가능 여부를 묻는 일반 서비스 문의로, 특정 방문·편의점·대량 발송 단서가 없어 진입 단계 문의로 분류"
+    },
+    {
+      "qa_id": "400080",
+      "question": "액체류도 보낼 수 있나요?",
+      "gold": "SPEC_SHIPPING",
+      "pred": "SPEC_SHIPPING",
+      "confidence": 0.7,
+      "reason": "액체류는 반입 제한 물품에 해당하므로, 서비스 종류와 무관하게 SPEC_SHIPPING으로 분류한다"
+    },
+    {
+      "qa_id": "400085",
+      "question": "쿠팡에서 주문한 물건도 여기서 환불되나요?",
+      "gold": "OTHER",
+      "pred": "OTHER",
+      "confidence": 0.5,
+      "reason": "쿠팡과 같은 외부 오픈마켓 주문·결제 환불 처리 문의로, 서비스 적용 범위 외 문의에 해당합니다."
+    },
+    {
+      "qa_id": "400086",
+      "question": "입점 문의는 어디로 하면 되나요?",
+      "gold": "OTHER",
+      "pred": "OTHER",
+      "confidence": 0.95,
+      "reason": "입점 문의는 OTHER 카테고리에 명시된 '입점·채용·세금계산서 등 행정 문의'에 직접 해당한다."
+    },
+    {
+      "qa_id": "400087",
+      "question": "채용 공고는 어디서 확인하나요?",
+      "gold": "OTHER",
+      "pred": "OTHER",
+      "confidence": 0.95,
+      "reason": "채용 공고 확인은 행정·인사 문의로, 택배 서비스 범주에 속하지 않아 OTHER 카테고리에 분류됨"
+    },
+    {
+      "qa_id": "400088",
+      "question": "세금계산서 발행 부서 연락처 좀 알려주세요.",
+      "gold": "OTHER",
+      "pred": "OTHER",
+      "confidence": 0.95,
+      "reason": "세금계산서 발행 부서 연락처 문의는 행정 문의로, OTHER 카테고리에 명시적으로 포함되어 있습니다."
+    },
+    {
+      "qa_id": "400089",
+      "question": "택배기사가 물건을 파손했는데 여기서 보상해주나요?",
+      "gold": "OTHER",
+      "pred": "OTHER",
+      "confidence": 0.95,
+      "reason": "택배사 내부 배송사고(파손 보상 문의)로, OTHER 카테고리에 명시된 영역"
+    },
+    {
+      "qa_id": "400090",
+      "question": "다른 사이트에서 예약한 것도 여기서 조회되나요?",
+      "gold": "OTHER",
+      "pred": "RESERVE_GENERAL",
+      "confidence": 0.4,
+      "reason": "예약 기능과 관련된 서비스 전체 문의로, 특정 서비스(CVS, 방문 등) 지칭 단서가 없고 서비스 도입 단계의 일반적인 질문으로 분류됨"
+    }
+  ],
+  "config": {
+    "backend": "opencode",
+    "model": "opencode/nemotron-3.5-lightning-free",
+    "threshold": 0.4,
+    "judge": null,
+    "note": "",
+    "round": "#13",
+    "target": "백엔드 비교",
+    "why": "백엔드가 바뀌어도 같은 경로로 도는지, 수치가 얼마나 벌어지는지 봐야 한다",
+    "what": "같은 라우팅 평가셋 36건을 백엔드별로 돌린다",
+    "memo": "opencode nemotron-3.5-lightning-free (무료, 약 47초/건)"
+  }
+}

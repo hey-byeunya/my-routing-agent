@@ -53,7 +53,7 @@ def _rounds(rows: list[dict]) -> list[dict]:
             legacy = False
         if key not in by_key:
             order.append(key)
-            by_key[key] = {"round": key, "legacy": legacy, "memos": [], "routing": None, "answer": None,
+            by_key[key] = {"round": key, "legacy": legacy, "memos": [], "routing": [], "answer": [],
                            "target": "", "why": "", "what": ""}
         entry = by_key[key]
         for field in ("target", "why", "what"):
@@ -63,7 +63,9 @@ def _rounds(rows: list[dict]) -> list[dict]:
             entry["memos"].append(row["memo"])
         if not entry["what"] and row.get("detail"):
             entry["what"] = row["detail"]
-        entry["routing" if stage == "eval_routing" else "answer"] = row
+        # 한 회차에서 여러 번 잴 수 있다 (백엔드 비교가 그렇다). 마지막 것만 남기면
+        # 나머지 측정이 표에서 사라진다.
+        entry["routing" if stage == "eval_routing" else "answer"].append(row)
 
     return [by_key[k] for k in order]
 
@@ -72,19 +74,26 @@ def _fmt(value, digits: int = 3) -> str:
     return "—" if value is None else f"{value:.{digits}f}"
 
 
+def _tag(row: dict) -> str:
+    """여러 번 잰 회차에서 어느 백엔드의 수치인지 붙인다."""
+    model = (row.get("model") or "").split("/")[-1]
+    return f"{row.get('backend', '?')}{'/' + model if model else ''}"
+
+
 def _cells(entry: dict) -> list[str]:
     routing, answer = entry["routing"], entry["answer"]
-    if routing:
-        left = f"{_fmt(routing.get('accuracy'))} / {_fmt(routing.get('macro_f1'))} ({routing.get('count')}건)"
-    else:
-        left = "—"
-    if answer:
-        right = f"{_fmt(answer.get('tool_score'))} / {_fmt(answer.get('answer_score'))} ({answer.get('count')}턴)"
-    else:
-        right = "—"
-    backend = (routing or answer or {}).get("backend", "")
-    model = (routing or answer or {}).get("model") or ""
-    label = entry["round"] + (f"<br>`{backend}{'/' + model if model else ''}`" if backend else "")
+    many = len(routing) > 1 or len(answer) > 1
+
+    def line(row: dict, fields: tuple[str, str], unit: str) -> str:
+        head = f"{_tag(row)} " if many else ""
+        return (f"{head}{_fmt(row.get(fields[0]))} / {_fmt(row.get(fields[1]))} "
+                f"({row.get('count')}{unit})")
+
+    left = "<br>".join(line(r, ("accuracy", "macro_f1"), "건") for r in routing) or "—"
+    right = "<br>".join(line(a, ("tool_score", "answer_score"), "턴") for a in answer) or "—"
+
+    first = (routing + answer)[0] if (routing or answer) else {}
+    label = entry["round"] + ("" if many else f"<br>`{_tag(first)}`" if first.get("backend") else "")
     return [
         label,
         f"`{entry['target']}`" if entry["target"] else "—",

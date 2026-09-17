@@ -46,13 +46,15 @@ python -m src.agent --dry-run "제주도인데 배송비 더 붙나요?"
 
 `AGENT_BACKEND` 하나로 갈아끼운다. 코드는 어느 백엔드인지 모르는 채로 돈다.
 
-| 백엔드 | 키 | 실측 속도 | 설정 |
+| 백엔드 | 키 | 실측 속도 (라우팅 36건) | 설정 |
 | --- | --- | --- | --- |
-| `openai` | **필요** (`OPENAI_API_KEY`) | 가장 빠름 | 기본값. 기본 모델 `gpt-4o-mini` |
-| `claude` | 불필요 (구독 로그인) | 약 10초/건 | `claude --version` 으로 설치 확인. 기본 모델 `haiku` |
-| `opencode` | 불필요 | 약 25초/건 | 무료 모델 `opencode/nemotron-3.5-lightning-free`, 비용 0 |
-| `ollama` | 불필요 (로컬) | 9B 로 26.6초/건 (실측) | `ollama list` 로 서버 확인. **3B 는 구조화 출력을 못 낸다** — `AGENT_MODEL_OLLAMA=qwen3.5:9b` 처럼 9B 이상을 쓴다 |
+| `openai` | **필요** (`OPENAI_API_KEY`) | 0.2초/건 | 기본값. 기본 모델 `gpt-4o-mini` |
+| `claude` | 불필요 (구독 로그인) | 4.7초/건 | `claude --version` 으로 설치 확인. 기본 모델 `haiku`. 사용량 한도가 먼저 걸린다 |
+| `opencode` | 불필요 | 33초/건 | 무료 모델만 쓴다. 비용 0, 정확도는 openai 와 큰 차이 없다 |
+| `ollama` | 불필요 (로컬) | 70초/건 (9B) | **3B 는 구조화 출력을 못 낸다** — `AGENT_MODEL_OLLAMA=qwen3.5:9b` 처럼 9B 이상 |
 | `replay` | 불필요 | 즉시 | `data/demo_cache.json` 에 녹화된 응답만 돌려준다 |
+
+백엔드별 정확도 비교는 REPORT §4 에 있다. 요점은 **유료가 유일한 선택지가 아니라는 것** — 무료 opencode 가 0.861, 유료 openai 가 0.889 이고, 차이는 정확도보다 시간에서 난다.
 
 **키가 하나도 없을 때** — `replay` 로 돌린다. 녹화된 응답을 프롬프트 해시로 되돌려 주는 모드이고, **진짜 모델 호출이 아니다.** 녹화에 없는 질문에는 답하지 못한다. replay 로 돌았다는 사실은 로그·화면·`store/metrics.jsonl` 에 모두 드러난다 — 조용히 다른 모드로 돌지 않는다.
 
