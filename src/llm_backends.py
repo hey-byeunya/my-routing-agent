@@ -599,14 +599,13 @@ def _smoke(backends: Iterable[str]) -> int:
     """같은 질문에 백엔드들이 같은 구조로 답하는지 본다."""
     import time
 
-    from src.schemas import RouteDecision
+    from src.schemas import ROUTE_LABELS, ROUTE_LIST, RouteDecision
 
     question = "롯데택배로 방문택배 보내려는데 제주도면 배송비가 더 붙나요?"
-    guide = (
-        "너는 택배중계서비스 상담 문의를 분류한다. "
-        "RESERVE_GENERAL(예약 일반) / VISIT_PICKUP(방문택배) / CVS_PICKUP(편의점택배) / "
-        "BIZ_BULK(사업자·대량) / SPEC_SHIPPING(규격·배송·취소) / OTHER(범위 밖) 중 하나를 고른다."
-    )
+    # 카테고리 목록을 여기 또 적지 않는다. 카테고리가 늘거나 줄 때 한 곳만 고치면
+    # 되도록 schemas 에서 읽는다 — 스모크가 옛 목록으로 도는 일이 없게.
+    listed = " / ".join(f"{r}({ROUTE_LABELS.get(r, r)})" for r in ROUTE_LIST)
+    guide = f"너는 택배중계서비스 상담 문의를 분류한다. {listed} 중 하나를 고른다."
     failed = 0
     status = available()
     for name in backends:
