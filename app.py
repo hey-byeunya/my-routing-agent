@@ -18,7 +18,7 @@ from langchain_core.messages import AIMessage, ToolMessage
 
 from src.agent import DEFAULT_THRESHOLD, build_graph, called_tools
 from src.context import select_units
-from src.llm_backends import BACKENDS, BackendError, available, make_llm
+from src.llm_backends import BACKENDS, BackendError, available, make_llm, models_for
 from src.tools import tool_menu
 
 load_dotenv()
@@ -33,6 +33,15 @@ EXAMPLES = {
 }
 
 
+def _default_backend_index() -> int:
+    """기본 선택: URL 의 ?backend= → .env 의 AGENT_BACKEND → openai.
+
+    화면만 다른 백엔드를 기본으로 두면 CLI 로 잰 수치와 화면에서 보는 것이 어긋난다.
+    """
+    wanted = (st.query_params.get("backend") or os.environ.get("AGENT_BACKEND") or "openai").strip().lower()
+    return BACKENDS.index(wanted) if wanted in BACKENDS else 0
+
+
 # ---------------------------------------------------------------- 사이드바
 
 st.sidebar.title("설정")
@@ -43,16 +52,22 @@ choice = st.sidebar.radio(
     "LLM 백엔드",
     options=list(BACKENDS),
     format_func=lambda n: labels[BACKENDS.index(n)],
-    # 기본 선택은 .env 의 AGENT_BACKEND 를 따른다. 화면만 다른 백엔드를 기본으로
-    # 두면 CLI 로 잰 수치와 화면에서 보는 것이 어긋난다.
-    index=BACKENDS.index(os.environ.get("AGENT_BACKEND", "openai").strip().lower())
-    if os.environ.get("AGENT_BACKEND", "openai").strip().lower() in BACKENDS
-    else 0,
+    index=_default_backend_index(),
 )
 if status[choice]:
     st.sidebar.warning(f"지금 쓸 수 없다 — {status[choice]}\n\nreplay 로 대체된다.")
 
-model = st.sidebar.text_input("모델 (비우면 기본값)", value="")
+DIRECT = "직접 입력…"
+choices = models_for(choice)
+if choices:
+    picked = st.sidebar.selectbox(
+        "모델", options=[*choices, DIRECT], index=0,
+        help="목록은 백엔드에서 직접 읽어 온다. opencode 는 무료 모델만 보여 준다.",
+    )
+    model = st.sidebar.text_input("모델 이름", value="") if picked == DIRECT else picked
+else:
+    st.sidebar.caption("모델 목록을 읽지 못했다 (CLI 없음 또는 오프라인). 이름을 직접 적는다.")
+    model = st.sidebar.text_input("모델", value="")
 threshold = st.sidebar.slider(
     "확신도 임계값 τ", min_value=0.0, max_value=1.0, value=DEFAULT_THRESHOLD, step=0.05,
     help="판정 확신도가 이 값 아래면 답변을 만들지 않고 담당자에게 넘긴다.",
@@ -72,6 +87,14 @@ with st.sidebar.expander("백엔드별 상태"):
 st.title("📦 택배중계 고객응대 라우팅 에이전트")
 st.caption("문의 하나 → ① 카테고리 판정 → ② 근거 조립 → ③ 계획·도구 → ④ 답변 → ⑤ 검증")
 
+# URL 로도 받는다: ?q=문의&run=1 (&backend=openai)
+# 링크 하나로 같은 화면을 다시 띄울 수 있어야 캡처도 남기고 남에게 보여 주기도 쉽다.
+params = st.query_params
+url_question = params.get("q", "")
+autorun = params.get("run", "") in ("1", "true", "yes")
+if url_question and "question" not in st.session_state:
+    st.session_state["question"] = url_question
+
 cols = st.columns(len(EXAMPLES))
 for col, (label, text) in zip(cols, EXAMPLES.items()):
     if col.button(label, use_container_width=True):
@@ -83,7 +106,7 @@ question = st.text_area(
 )
 run = st.button("실행", type="primary", disabled=not question.strip())
 
-if not run:
+if not (run or (autorun and question.strip())):
     st.stop()
 
 

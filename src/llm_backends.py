@@ -438,6 +438,64 @@ def record_replay(prompt: str, response: str, path: Path | None = None) -> None:
     path.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
 
+# ---------------------------------------------------------------- 모델 목록
+
+# openai 는 목록을 물어보면 수백 개가 오고 대부분 이 과제에 쓸 것이 아니다.
+# 과제에서 실제로 쓸 만한 것만 추린다. 여기 없는 모델은 화면에서 직접 입력한다.
+OPENAI_MODELS = ["gpt-4o-mini", "gpt-4.1-mini", "gpt-4o"]
+
+# claude CLI 는 별칭을 받는다. 구독 한도는 모델이 클수록 빨리 닳는다.
+CLAUDE_MODELS = ["haiku", "sonnet", "opus"]
+
+_model_cache: dict[str, list[str]] = {}
+
+
+def _cli_lines(cmd: list[str], timeout_s: int = 20) -> list[str]:
+    try:
+        out = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout_s)
+    except Exception:  # noqa: BLE001 - 목록을 못 가져와도 화면은 떠야 한다
+        return []
+    return [line.strip() for line in out.stdout.splitlines() if line.strip()]
+
+
+def models_for(backend: str, refresh: bool = False) -> list[str]:
+    """이 백엔드에서 고를 수 있는 모델. 화면의 선택 목록이 여기서 나온다.
+
+    모델 이름을 손으로 적게 하면 오타 한 번에 백엔드가 통째로 죽는다
+    (실제로 .env 의 AGENT_MODEL 이 claude 로 새어 들어가 그런 일이 있었다).
+    목록을 못 가져오는 상황(CLI 없음·오프라인)에서도 빈 목록을 돌려주고 화면은
+    계속 돈다 — 그때는 직접 입력한다.
+    """
+    if not refresh and backend in _model_cache:
+        return _model_cache[backend]
+
+    if backend == "openai":
+        models = list(OPENAI_MODELS)
+    elif backend == "claude":
+        models = list(CLAUDE_MODELS)
+    elif backend == "ollama":
+        # `ollama list` 의 첫 줄은 머리글이고 첫 칸이 모델 이름이다.
+        models = [line.split()[0] for line in _cli_lines(["ollama", "list"])[1:] if line.split()]
+    elif backend == "opencode":
+        # 무료 모델만 보여 준다. 유료 모델을 고르면 과제 비용이 조용히 새어 나간다.
+        binary = os.environ.get("OPENCODE_BIN", "opencode")
+        models = [line for line in _cli_lines([binary, "models"], timeout_s=40) if line.endswith("-free")]
+    elif backend == "replay":
+        models = [DEFAULT_MODELS["replay"]]
+    else:
+        models = []
+
+    # 기본 모델은 언제나 목록에 있고 맨 앞에 온다.
+    default = DEFAULT_MODELS.get(backend)
+    if default and default in models:
+        models.remove(default)
+    if default:
+        models.insert(0, default)
+
+    _model_cache[backend] = models
+    return models
+
+
 # ---------------------------------------------------------------- 팩토리
 
 
