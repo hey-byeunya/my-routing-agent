@@ -38,6 +38,10 @@ DEFAULT_THRESHOLD = 0.4
 # 정책 §10.2 가 "동일 사안 3회 이상"을 이관 조건으로 두는 것에 맞춘다.
 ASK_LIMIT = 3
 
+# 근거 없는 수치가 끝내 남았을 때 대신 내보내는 문장.
+# 정책 §0 원칙1 이 "값을 모를 때 쓸 문장"으로 정해 둔 것을 그대로 쓴다.
+UNVERIFIED_ANSWER_TEXT = "정확한 운임을 확인해 드리겠습니다. 잠시만 기다려 주세요."
+
 ESCALATE_FALLBACK_TEXT = (
     "죄송합니다. 문의하신 내용을 정확히 확인하기 어려워 담당자에게 연결해 드리겠습니다."
 )
@@ -324,8 +328,57 @@ def build_graph(
             # "지어낸 수치"로 잡으면 오탐이 된다.
             said=f"{state.get('question', '')}\n{_history_text(state.get('history'))}",
         )
-        log("6/6 검증", "통과" if verdict["ok"] else f"근거 없는 수치 {verdict['unsupported']}")
-        return {"verdict": verdict, "trace": _note(state, "verify", ok=verdict["ok"])}
+        if verdict["ok"]:
+            log("6/6 검증", "통과")
+            return {"verdict": verdict, "trace": _note(state, "verify", ok=True)}
+
+        # 잡았으면 막는다. 표시만 하고 내보내면 가드레일이 없는 것과 같다 —
+        # 고객은 배지를 보지 않고 답변을 본다. 정책 §10.3 이 금지한 "매뉴얼에도
+        # 화면에도 없는 수치를 만들어 안내하는 것"이 그대로 일어난다.
+        bad = verdict["unsupported"]
+        log("6/6 검증", f"근거 없는 수치 {bad} — 답변을 내보내지 않는다")
+
+        # 한 번은 그 수치를 빼고 다시 쓰게 해 본다. 근거는 그대로 주므로
+        # 답할 수 있는 만큼은 답하게 된다.
+        retry_prompt = prompts.answer_prompt(
+            route=state["route"],
+            context=state["context"],
+            action=state.get("action", "ANSWER"),
+            ask=state.get("ask", []),
+            tool_results=_tool_results_text(state.get("messages", [])),
+            history=_history_text(state.get("history")),
+            question=state["question"],
+            forbid_numbers=bad,
+        )
+        try:
+            retried = str(llm.invoke(retry_prompt).content).strip()
+        except Exception:  # noqa: BLE001 - 재작성 실패는 안전 문구로 간다
+            retried = ""
+
+        if retried:
+            recheck = check_guardrail(
+                answer=retried,
+                tool_results=[m.content for m in state.get("messages", []) if isinstance(m, ToolMessage)],
+                context=state.get("context", ""),
+                said=f"{state.get('question', '')}\n{_history_text(state.get('history'))}",
+            )
+            if recheck["ok"]:
+                log("6/6 검증", "재작성 통과")
+                return {
+                    "answer": retried,
+                    "verdict": {**recheck, "regenerated": True, "first_unsupported": bad},
+                    "trace": _note(state, "verify", ok=True, regenerated=True),
+                }
+
+        # 두 번째도 근거 없는 수치가 남으면 값을 말하지 않는다.
+        # 문장은 정책 §0 원칙1 이 정해 둔 것을 그대로 쓴다.
+        log("6/6 검증", "재작성도 실패 — 값을 말하지 않는 문구로 대체")
+        return {
+            "answer": UNVERIFIED_ANSWER_TEXT,
+            "verdict": {**verdict, "blocked": True},
+            "fallback": "guardrail",
+            "trace": _note(state, "verify", ok=False, blocked=True, unsupported=bad),
+        }
 
     graph = StateGraph(AgentState)
     graph.add_node("classify", classify)

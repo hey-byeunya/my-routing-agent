@@ -41,10 +41,19 @@ def check_guardrail(answer: str, tool_results: list[str], context: str = "", sai
     for source in [*tool_results, context, said]:
         grounded.update(_numbers(str(source)))
 
-    # 조회 결과 두 값의 한 단계 산술(합·차)로 설명되면 허용한다.
-    # "3,800원 + 제주 3,000원 = 6,800원" 같은 안내가 정상이기 때문이다.
+    # 합·차로 설명되는 값도 허용한다 — "3,800원 + 제주 3,000원 = 6,800원" 같은
+    # 안내가 정상이기 때문이다. 다만 **이번 턴의 조회 결과와 고객 발화**에서 나온
+    # 값끼리만 더한다.
+    #
+    # 근거 문서 전체를 산술 재료로 쓰면 구멍이 너무 커진다. 매뉴얼 운임표에는
+    # 1,000 이상인 수가 수십 개 있어 두 값의 합·차만으로도 수백 가지가 "근거 있는
+    # 값"이 된다. 실제로 지어낸 6,000원이 매뉴얼의 3,000원 + 3,000원 으로 설명돼
+    # 그냥 통과했다. 조회하지도 않은 표의 아무 두 값을 더한 것은 근거가 아니다.
+    operands: set[int] = set()
+    for source in [*tool_results, said]:
+        operands.update(_numbers(str(source)))
     derived: set[int] = set()
-    values = sorted(v for v in grounded if v >= MIN_AMOUNT)
+    values = sorted(v for v in operands if v >= MIN_AMOUNT)
     for i, a in enumerate(values):
         for b in values[i:]:
             derived.add(a + b)
@@ -73,6 +82,8 @@ def _main() -> None:
         ("합산 허용", "운임 3,800원에 제주 3,000원이 더해져 6,800원입니다.", ['{"fee": 3800, "surcharge": 3000}'], True),
         ("작은 수 무시", "1~3문장으로 안내드립니다. 2kg 기준입니다.", [], True),
         ("근거 문서에서 찾음", "기본 운임은 3,900원입니다.", [], True),
+        # 실제로 화면에서 새어 나간 값. 매뉴얼의 3,000+3,000 으로 설명돼 통과했었다.
+        ("문서 값끼리의 합은 근거가 아니다", "기본 운임은 6,000원입니다.", [], False),
     ]
     from routing_agent.context import build_context
 

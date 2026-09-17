@@ -10,6 +10,8 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 from routing_agent.agent import ASK_LIMIT, asks_on_issue, conversation_progress, should_escalate
 
 FAILED: list[str] = []
@@ -66,6 +68,40 @@ def main() -> int:
           "§10.2" not in conversation_progress(talk(1), "RESERVE_GENERAL"))
     check("카테고리가 없는 이력에는 아무 말도 하지 않는다",
           conversation_progress([("customer", "q"), ("agent", "a")], "RESERVE_GENERAL") == "")
+
+    # ── 근거 없는 수치를 내보내지 않는가 (정책 §10.3 · §0 원칙1)
+    print("\n[근거 없는 수치 차단]")
+    from routing_agent.agent import UNVERIFIED_ANSWER_TEXT
+    from routing_agent.context import build_context
+    from routing_agent.guardrail import check_guardrail
+
+    ctx = build_context("VISIT_PICKUP")
+    tool_out = ['{"carrier": "한진택배", "fee": 5000}']
+
+    v_bad = check_guardrail("한진택배 기본 운임은 6,000원입니다.", tool_out, ctx, said="")
+    check("조회 결과에 없는 금액을 잡는다", not v_bad["ok"] and 6000 in v_bad["unsupported"],
+          str(v_bad["unsupported"]))
+
+    v_ok = check_guardrail("한진택배 기본 운임은 5,000원입니다.", tool_out, ctx, said="")
+    check("조회 결과에 있는 금액은 통과시킨다", v_ok["ok"])
+
+    v_said = check_guardrail("예약번호 R-90410 으로 확인해 드리겠습니다.", [], ctx,
+                             said="R-90410 취소해주세요")
+    check("고객이 말한 번호는 지어낸 것으로 보지 않는다", v_said["ok"])
+
+    # 차단 시 내보내는 문장은 매뉴얼이 정해 둔 것이어야 한다. 우리가 지어낸 문구면
+    # "값을 모를 때 이렇게 말한다"는 정책이 코드와 어긋난다.
+    policy = (Path(__file__).resolve().parent.parent / "docs" / "policy_courierhub.md").read_text(encoding="utf-8")
+    check("차단 시 문구가 매뉴얼 §0 원칙1 에 있는 문장이다",
+          UNVERIFIED_ANSWER_TEXT in policy, UNVERIFIED_ANSWER_TEXT)
+
+    # ── 할 수 없는 일을 약속하지 않는가 (§2 — 예약은 고객이 예약 화면에서 한다)
+    print("\n[할 수 없는 일]")
+    from routing_agent.prompts import ANSWER_RULES, PLAN_RULES
+
+    check("계획 규칙이 새 예약을 대신 넣지 말라고 적고 있다", "새 예약을 대신 넣지 않는다" in PLAN_RULES)
+    check("답변 규칙이 할 수 없는 일을 말하지 말라고 적고 있다",
+          "우리가 할 수 없는 일을 하겠다고 말하지 않는다" in ANSWER_RULES)
 
     print()
     if FAILED:

@@ -405,8 +405,6 @@ def main() -> int:
     parser.add_argument("--rule-baseline", action="store_true", help="LLM 없이 규칙 기준선만 잰다")
     parser.add_argument("--name", default=None, help="runs/<이름>.json 으로 저장")
     parser.add_argument("--note", default="", help="이번 시도에서 무엇을 바꿨는지. 기록표에 남는다")
-    parser.add_argument("--round", default=None,
-                        help="회차 번호 (예: #28). 안 주면 기록표가 시간순으로 자동 부여한다")
     # 아래 다섯은 "개선 시도별 기록표"의 칸을 그대로 채운다 (scripts/report_table.py).
     # 수치만 쌓으면 나중에 왜 바꿨는지 복원할 수 없다. 잴 때 같이 적는다.
     parser.add_argument("--round", default=None, help="회차 (예: #2). 비우면 시간순으로 매긴다")
@@ -469,7 +467,6 @@ def main() -> int:
         f"eval_{args.task}",
         payload["metrics"]["n"],
         detail=args.note or name,
-        round=getattr(args, "round", None),
         backend=backend,
         model=getattr(llm, "model_name", None) if llm else None,
         threshold=args.threshold,
