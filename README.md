@@ -73,7 +73,8 @@ python -m src.agent --backend replay "편의점택배 접수하면 언제 수거
 
 ```bash
 python scripts/check_context.py          # ① 카테고리별 근거 절 매핑·크기·겹침
-python scripts/check_grader.py           # ② 모범 답안이 채점기에서 전부 만점인가
+python scripts/check_mockdb.py           # ② 조회 도구가 무엇을 돌려주는가 (이름 해석·구간·할증)
+python scripts/check_grader.py           # ③ 모범 답안이 채점기에서 전부 만점인가
 python -m src.agent --dry-run "문의"      # ③ LLM 없이 앞단
 python -m src.llm_backends --smoke --backend all   # ④ 백엔드가 같은 구조로 답하는가
 ```
@@ -126,5 +127,6 @@ streamlit run app.py
 | `src/guardrail.py` | 근거에 없는 수치가 답변에 섞였는지 기계적으로 검사 |
 | `src/grader.py` · `src/evaluate.py` | 두 지표 채점과 평가 실행기 |
 | `src/record.py` | `store/metrics.jsonl` 에 1줄 1레코드로 덧붙인다 |
+| `scripts/check_*.py` | LLM 없이 도는 픽스처 검증 (근거 매핑 · 조회 도구 · 채점기) |
 | `scripts/report_table.py` | 그 기록에서 회차별 종합 기록표를 뽑는다 |
 | `app.py` | Streamlit 데모 |
