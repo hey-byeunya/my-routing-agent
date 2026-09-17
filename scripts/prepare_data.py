@@ -51,6 +51,24 @@ def add_column(path: Path, src_col: str, new_col: str) -> Counter:
     return counts
 
 
+def reserve_other_fewshot(path: Path, n: int = 2) -> list[str]:
+    """OTHER 몇 건을 예시용으로 뺀다.
+
+    원본은 OTHER 를 전부 split=outscope 로 두어 예시가 한 건도 없었다. 그러면
+    분류 프롬프트에 범위 밖 예시가 없어, 범위 밖 문의를 업무 카테고리로
+    끌어오는 실패가 늘어난다. qa_id 순으로 앞의 n건을 예시용으로 돌린다.
+    """
+    fields, rows = _read_csv(path)
+    others = sorted((r for r in rows if r["route_v2"] == "OTHER"), key=lambda r: r["qa_id"])
+    moved = []
+    for row in others[:n]:
+        if row["split"] != "fewshot":
+            row["split"] = "fewshot"
+        moved.append(row["qa_id"])
+    _write_csv(path, fields, rows)
+    return moved
+
+
 def merge_goldenset(path: Path) -> Counter:
     data = json.loads(path.read_text(encoding="utf-8"))
     counts: Counter = Counter()
@@ -73,6 +91,8 @@ def _show(title: str, counts: Counter, total_label: str) -> None:
 
 def main() -> int:
     _show("routing_answers.csv → route_v2", add_column(DATA / "routing_answers.csv", "route", "route_v2"), "건")
+    moved = reserve_other_fewshot(DATA / "routing_answers.csv")
+    print(f"\nOTHER 예시용으로 이동: {', '.join(moved)} (분류 프롬프트에 범위 밖 예시를 넣기 위해)")
     _show(
         "hard_cases.csv → route_expected_v2",
         add_column(DATA / "hard_cases.csv", "route_expected", "route_expected_v2"),

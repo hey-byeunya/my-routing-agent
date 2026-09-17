@@ -197,6 +197,40 @@ NEW_CONVERSATIONS = [
 ]
 
 
+# 채점기 자체 검증(scripts/check_grader.py)이 잡아낸 정답셋 결함을 고친다.
+# 모범 답안이 자기 기준을 못 넘기면 그 기준이 틀린 것이다.
+PATCHES = [
+    {
+        "conv_id": "C-004",
+        "turn": 2,
+        "drop_must_ask": ["선호하는 택배사(없으면 상관없음으로 확인)"],
+        "why": (
+            "다량할인 상품은 택배사가 아니라 박스 수량으로 갈린다(정책 §4.2, "
+            "mockdata bulk_discount 는 수량별 상품 목록이다). 조회 도구도 carrier 를 받지 않는다. "
+            "택배사를 되물으라는 기준은 모범 답안 자신도 지키지 않는다."
+        ),
+    },
+]
+
+
+def apply_patches(payload: dict) -> list[str]:
+    applied = []
+    for patch in PATCHES:
+        conv = next((c for c in payload["conversations"] if c["conv_id"] == patch["conv_id"]), None)
+        if conv is None:
+            continue
+        for turn in conv["turns"]:
+            if turn.get("turn") != patch["turn"] or not turn.get("expect"):
+                continue
+            before = turn["expect"].get("must_ask", [])
+            after = [a for a in before if a not in patch["drop_must_ask"]]
+            if before != after:
+                turn["expect"]["must_ask"] = after
+                turn["expect"]["rubric"] += f" (기준 수정: {patch['why']})"
+                applied.append(f"{patch['conv_id']}#{patch['turn']}")
+    return applied
+
+
 def main() -> int:
     payload = json.loads(PATH.read_text(encoding="utf-8"))
     existing = {c["conv_id"] for c in payload["conversations"]}
@@ -208,6 +242,8 @@ def main() -> int:
         payload["conversations"].append(conv)
         added += 1
 
+    patched = apply_patches(payload)
+
     for conv in payload["conversations"]:
         conv["split"] = "fewshot" if conv["conv_id"] in FEWSHOT else "eval"
 
@@ -217,7 +253,8 @@ def main() -> int:
     )
     PATH.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
-    print(f"새 대화 {added}개 추가 (이미 있으면 건너뛴다)\n")
+    print(f"새 대화 {added}개 추가 (이미 있으면 건너뛴다)")
+    print(f"기준 수정 {len(patched)}건: {', '.join(patched) or '없음'}\n")
     for split in ("fewshot", "eval"):
         convs = [c for c in payload["conversations"] if c["split"] == split]
         turns = sum(1 for c in convs for t in c["turns"] if t.get("expect"))
