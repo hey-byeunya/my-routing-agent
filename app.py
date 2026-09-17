@@ -86,11 +86,6 @@ st.sidebar.caption(
 
 turns: list[dict] = st.session_state.setdefault("turns", [])
 
-if st.sidebar.button("새 대화 시작", use_container_width=True, disabled=not turns):
-    st.session_state["turns"] = []
-    st.session_state.pop("pending", None)
-    st.rerun()
-
 with st.sidebar.expander("백엔드별 상태"):
     for name in BACKENDS:
         st.write(f"- **{name}** — {status[name] or '사용 가능'}")
@@ -187,46 +182,83 @@ if params.get("q") and params.get("run", "") in ("1", "true", "yes") and not st.
     st.session_state["pending"] = params["q"]
     st.session_state["url_sent"] = True
 
-typed = st.chat_input("문의를 입력하세요 — 이어서 물으면 앞 대화가 이력으로 들어간다")
-question = typed or st.session_state.pop("pending", None)
+question = st.session_state.pop("pending", None)
 
-if not question:
-    st.stop()
+if question:
+    with st.chat_message("user"):
+        st.write(question)
 
-with st.chat_message("user"):
-    st.write(question)
+    try:
+        llm = make_llm(choice, model or None, quiet=True)
+    except BackendError as exc:
+        st.error(f"백엔드를 준비하지 못했다 — {exc}")
+        st.stop()
 
-try:
-    llm = make_llm(choice, model or None, quiet=True)
-except BackendError as exc:
-    st.error(f"백엔드를 준비하지 못했다 — {exc}")
-    st.stop()
+    # 앞선 턴이 이력이 된다. 이것이 없으면 §10.2(반복 문의 이관)가 성립하지 않는다.
+    # 각 발화에 그때의 카테고리를 함께 붙인다 — 한 대화에 여러 사안이 섞이므로,
+    # 무엇을 몇 번 물었는지는 카테고리까지 봐야 알 수 있다.
+    history = [(role, text, past["route"]) for past in turns
+               for role, text in (("customer", past["question"]), ("agent", past["answer"]))]
 
-# 앞선 턴이 이력이 된다. 이것이 없으면 §10.2(반복 문의 이관)가 성립하지 않는다.
-# 각 발화에 그때의 카테고리를 함께 붙인다 — 한 대화에 여러 사안이 섞이므로,
-# 무엇을 몇 번 물었는지는 카테고리까지 봐야 알 수 있다.
-history = [(role, text, past["route"]) for past in turns
-           for role, text in (("customer", past["question"]), ("agent", past["answer"]))]
+    graph = build_graph(llm=llm, threshold=threshold)
+    with st.chat_message("assistant"):
+        started = time.monotonic()
+        with st.spinner(f"{graph.backend_name} 로 파이프라인을 돌리는 중…"):
+            state = graph.invoke(
+                {"question": question, "history": history, "messages": [], "trace": []}
+            )
+        turn = {
+            "question": question,
+            "answer": state.get("answer", ""),
+            "state": state,
+            "route": state.get("route", "?"),
+            "confidence": state.get("confidence", 0.0) or 0.0,
+            "tools": called_tools(state),
+            "elapsed": time.monotonic() - started,
+            "backend": graph.backend_name,
+            "backend_note": f"`{choice}` 대신 돌았다" if graph.backend_name != choice else "",
+            "threshold": threshold,
+        }
+        turns = [*turns, turn]
+        st.session_state["turns"] = turns
+        st.write(turn["answer"])
+        draw_detail(turn)
 
-graph = build_graph(llm=llm, threshold=threshold)
-with st.chat_message("assistant"):
-    started = time.monotonic()
-    with st.spinner(f"{graph.backend_name} 로 파이프라인을 돌리는 중…"):
-        state = graph.invoke(
-            {"question": question, "history": history, "messages": [], "trace": []}
-        )
-    turn = {
-        "question": question,
-        "answer": state.get("answer", ""),
-        "state": state,
-        "route": state.get("route", "?"),
-        "confidence": state.get("confidence", 0.0) or 0.0,
-        "tools": called_tools(state),
-        "elapsed": time.monotonic() - started,
-        "backend": graph.backend_name,
-        "backend_note": f"`{choice}` 대신 돌았다" if graph.backend_name != choice else "",
-        "threshold": threshold,
-    }
-    st.session_state["turns"] = [*turns, turn]
-    st.write(turn["answer"])
-    draw_detail(turn)
+
+# ---------------------------------------------------------------- 입력줄
+
+# 입력칸과 같은 줄 오른쪽에 새 대화 버튼을 둔다. 대화를 비우는 일은 입력 옆에
+# 있어야 손이 간다 — 사이드바에 있으면 대화 중에 찾지 않는다.
+#
+# chat_input 은 최상단에 둘 때만 화면 아래에 붙는다. 컬럼 안에 넣으면 그 성질을
+# 잃으므로 sticky 로 다시 붙이고, **대화를 다 그린 뒤** 마지막에 그린다 —
+# sticky 는 문서 순서를 타기 때문에 위에 두면 대화 위로 올라간다.
+st.markdown(
+    """
+    <style>
+      .st-key-composer {
+        position: sticky; bottom: 0; z-index: 50;
+        background: var(--background-color);
+        padding: 0.35rem 0 0.15rem 0;
+      }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
+with st.container(key="composer"):
+    box, reset = st.columns([14, 1], vertical_alignment="bottom")
+    with box:
+        typed = st.chat_input("문의를 입력하세요 — 이어서 물으면 앞 대화가 이력으로 들어간다")
+    with reset:
+        if st.button("🔄", help="새 대화 시작 (지금까지의 대화를 비운다)",
+                     use_container_width=True, disabled=not turns):
+            st.session_state["turns"] = []
+            st.session_state.pop("pending", None)
+            st.rerun()
+
+# 보낸 문의는 다음 실행에서 처리한다. 그래야 대화가 먼저 그려지고 입력줄이
+# 그 아래에 남는다.
+if typed:
+    st.session_state["pending"] = typed
+    st.rerun()
