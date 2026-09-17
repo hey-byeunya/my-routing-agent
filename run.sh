@@ -42,7 +42,19 @@ case "$cmd" in
   demo)
     echo "▸ 데모를 띄운다 → http://localhost:8601"
     echo "  URL 로도 된다: 'http://localhost:8601/?q=제주도인데 배송비 더 붙나요?&run=1'"
-    exec .venv/bin/streamlit run app.py --server.port 8601
+    echo "  멈추려면 Ctrl+C"
+    # 설정에서 headless 로 두었다(첫 실행 이메일 프롬프트를 없애려고). 그래서
+    # 브라우저는 여기서 연다 — 서버가 응답하기 시작하면.
+    (
+      for _ in $(seq 1 40); do
+        if curl -sf -o /dev/null http://localhost:8601/ 2>/dev/null; then
+          command -v open >/dev/null && open http://localhost:8601
+          break
+        fi
+        sleep 0.5
+      done
+    ) &
+    exec .venv/bin/streamlit run app.py
     ;;
   check)
     $PY scripts/check_context.py
