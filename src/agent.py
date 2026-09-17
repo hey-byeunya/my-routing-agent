@@ -130,6 +130,16 @@ def build_graph(
         }
 
     def gate(state: AgentState) -> Literal["plan", "escalate"]:
+        """확신이 없으면 넘긴다. 단 OTHER 는 예외다.
+
+        정책 §10.2 의 이관 조건에 "분류 확신도가 낮음"은 없다. 그리고 §10.1 은
+        응대 범위 밖 문의를 담당자에게 넘기라고 하지 않고 **해당 채널을 안내하고
+        끝내라**고 한다. OTHER 는 확신이 낮아서 고른 칸이 아니라 "여기서 답할 수
+        없다"는 판정 자체이므로, 낮은 확신도를 이유로 사람에게 넘기면 범위 밖
+        문의가 그대로 2차 상담에 쌓인다.
+        """
+        if state.get("route") == "OTHER":
+            return "plan"
         return "plan" if state.get("confidence", 0.0) >= threshold else "escalate"
 
     # ------------------------------------------------------------ 3/6 계획
