@@ -41,3 +41,9 @@ qa_id,question,route,route_original,source_split
 490001,예약 어디서 해요?,RESERVE_GENERAL,RESERVE_GENERAL,eval
 490003,예약한 내역을 확인할 수가 없어요.,SPEC_SHIPPING,SPEC_SHIPPING,eval
 490005,세금계산서는 어디서 발급받나요?,OTHER,OTHER,outscope
+490006,2kg에 세 변 합 60cm인데 제일 싸게 보내려면 얼마예요?,RESERVE_GENERAL,RESERVE_GENERAL,eval
+490007,한진택배 방문택배로 5kg에 세 변 합 80cm면 얼마예요?,VISIT_PICKUP,VISIT_PICKUP,eval
+490008,세븐일레븐 착한택배 5kg에 80cm 이하면 얼마예요?,CVS_PICKUP,CVS_PICKUP,eval
+490009,다량할인으로 10박스 보내는데 2kg에 60cm면 한 건당 얼마예요?,BIZ_BULK,BULK_DISCOUNT,eval
+490010,운송장번호로 조회하면 결제한 금액도 같이 나오나요?,SPEC_SHIPPING,SPEC_SHIPPING,eval
+490011,오픈마켓에서 결제한 배송비는 얼마나 환불되나요?,OTHER,OTHER,outscope

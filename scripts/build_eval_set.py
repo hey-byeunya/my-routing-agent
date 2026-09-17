@@ -20,6 +20,20 @@ from routing_agent.schemas import ROUTE_LIST
 
 OUT = Path(__file__).resolve().parent.parent / "data" / "eval_set.csv"
 
+# 빈자리를 메우려고 저작한 문의는 **반드시 평가셋에 넣는다.**
+# 등간격 샘플링은 qa_id 순으로 집으므로, 뒤에 붙인 문의는 그 카테고리에 원본이 많으면
+# 그대로 떨어져 나간다. 실제로 그렇게 됐다 — 운임 문의 6건을 더하고 다시 뽑았더니
+# 넷이 빠지고 둘만 남았다. 메우려던 자리가 그대로 비어 있는 셈이라, 평가셋을 늘린
+# 뜻이 없어진다. 그래서 먼저 집고, 남은 자리를 등간격으로 채운다.
+#
+# **꼭 필요한 것만 고정한다.** 경로 문의(490001~490005)도 같은 뜻으로 저작한 것이지만
+# 고정하지 않는다 — 고정하지 않아도 샘플러가 집고, 고정하면 정원에 밀려 원본 5건이
+# 빠져 나가 이전 회차와 같은 문항으로 견줄 수 없게 된다. 지금 평가셋 48건은 옛 42건을
+# **그대로 품은 상위집합**이다.
+PINNED = {
+    "490006", "490007", "490008", "490009", "490010", "490011",  # 운임 문의 (서비스+규격+금액)
+}
+
 
 def evenly_spaced(items: list, k: int) -> list:
     """앞에서 k개를 자르지 않고 등간격으로 집는다. 세부 주제가 고루 섞이게."""
@@ -42,7 +56,14 @@ def main() -> int:
 
     picked = []
     for route in ROUTE_LIST:
-        picked += evenly_spaced(by_route[route], per_route)
+        pinned = [i for i in by_route[route] if i.qa_id in PINNED]
+        if len(pinned) > per_route:
+            raise SystemExit(
+                f"{route}: 고정 문항 {len(pinned)}건이 카테고리 정원 {per_route}건을 넘는다. "
+                "정원을 늘리거나 고정을 줄여야 한다"
+            )
+        rest = [i for i in by_route[route] if i.qa_id not in PINNED]
+        picked += pinned + evenly_spaced(rest, per_route - len(pinned))
     picked.sort(key=lambda i: i.qa_id)
 
     with OUT.open("w", encoding="utf-8", newline="") as fh:
@@ -57,6 +78,8 @@ def main() -> int:
     print(f"  {'합계':<16} {len(picked):>3}건 → {OUT.relative_to(OUT.parent.parent)}")
     held_out = len(eval_items()) - len(picked)
     print(f"\n남긴 {held_out}건은 평가셋에 넣지 않았다. 균형을 맞추느라 뺀 것이지 버린 것이 아니다.")
+    print(f"고정 문항 {sum(1 for i in picked if i.qa_id in PINNED)}건은 빈자리를 메우려고 저작한 것이라 "
+          "등간격 샘플링에서 빠지지 않게 먼저 집었다.")
     return 0
 
 

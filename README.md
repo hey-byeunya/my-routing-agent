@@ -64,7 +64,7 @@ python -m routing_agent.agent --dry-run "제주도인데 배송비 더 붙나요
 
 백엔드별 정확도 비교는 REPORT §4 에 있다. 요점은 **유료가 유일한 선택지가 아니라는 것** — 무료 opencode 가 0.861, 유료 openai 가 0.889 이고, 차이는 정확도보다 시간에서 난다.
 
-이 표와 위 두 수치는 **평가셋 36건(v1) 기준**이다. 그 뒤 평가셋을 42건으로 다시 뽑았지만, 백엔드를 서로 견주는 것이 목적이라 여섯 줄이 같은 셋에서 나온 36건 측정을 그대로 둔다. 헤드라인 수치(REPORT §4 첫 표)는 42건 기준이라 분모가 다르다.
+이 표와 위 두 수치는 **평가셋 36건(v1) 기준**이다. 그 뒤 평가셋을 42건, 다시 48건으로 뽑았지만, 백엔드를 서로 견주는 것이 목적이라 여섯 줄이 같은 셋에서 나온 36건 측정을 그대로 둔다. 헤드라인 수치(REPORT §4 첫 표)는 48건 기준이라 분모가 다르다.
 
 **키가 하나도 없을 때** — `replay` 로 돌린다. 녹화된 응답을 프롬프트 해시로 되돌려 주는 모드이고, **진짜 모델 호출이 아니다.** 녹화에 없는 질문에는 답하지 못한다. replay 로 돌았다는 사실은 로그·화면·`store/metrics.jsonl` 에 모두 드러난다 — 조용히 다른 모드로 돌지 않는다.
 
@@ -103,8 +103,11 @@ python -m routing_agent.evaluate --task routing --backend claude --name routing_
     --memo "C-011#6 해결, C-003#2 남음"
 
 python -m routing_agent.evaluate --task answer --backend claude --judge-backend claude --name answer_v3
+python -m routing_agent.evaluate --task routing --rule-baseline --name routing_rule   # LLM 없는 기준선
 python scripts/report_table.py           # 회차별 종합 기록표 (REPORT.md 에 붙인다)
 ```
+
+**기준선부터 잰다.** `--rule-baseline` 은 정규식 라우터만으로 같은 평가셋을 돈다(48건에서 0.750). LLM 수치는 이것과 견줘야 "LLM 을 써서 좋아졌다"고 말할 수 있다.
 
 `--round` 부터의 다섯 옵션은 **왜·무엇을 바꿨는지를 수치와 같은 줄에 남긴다.** 나중에 손으로 표를 쓰면 수치와 설명이 따로 놀기 때문에, `store/metrics.jsonl` 한 벌만 진실로 둔다.
 
@@ -161,6 +164,7 @@ python -m routing_agent.evaluate --task answer --backend openai --name answer_20
 | `opencode` 가 멈춰 있다 | 첫 줄 시한 90초. 전역 SQLite 를 공유하므로 동시 실행을 2 이하로 둔다 |
 | replay 가 답하지 못한다 | 녹화에 없는 질문이다. 녹화는 정식 런에서만 쌓인다 |
 | Streamlit 화면이 비어 있다 | 실행 버튼을 누르기 전에는 입력만 보인다 (`st.stop()`) |
+| 코드를 고쳤는데 화면이 그대로다 | 떠 있는 서버가 옛 모듈을 들고 있다. `app.py` 는 매 실행 다시 읽히지만 `src/routing_agent/*` 는 그렇지 않다 — **서버를 새로 띄운다.** 매뉴얼(`docs/policy_courierhub.md`)만은 파일 수정 시각을 캐시 키로 써서 같은 프로세스에서도 반영된다 |
 
 ## 폴더 규칙
 
@@ -192,7 +196,10 @@ python -m routing_agent.evaluate --task answer --backend openai --name answer_20
 | `src/routing_agent/record.py` | `store/metrics.jsonl` 에 1줄 1레코드로 덧붙인다 |
 | `scripts/check_*.py` | LLM 없이 도는 픽스처 검증 (근거 매핑 · 조회 도구 · 이관 판단 · 채점기) |
 | `scripts/report_table.py` | 그 기록에서 회차별 종합 기록표를 뽑는다 |
-| `scripts/add_navigation_inquiries.py` · `build_eval_set.py` | 원천 문의를 더하고 카테고리 균등 평가셋을 다시 뽑는다 |
+| `src/routing_agent/schemas.py` · `dataset.py` | 라우트 목록·구조화 출력 스키마, 데이터 적재와 예시/평가 분리 |
+| `scripts/prepare_data.py` · `extend_goldenset.py` | 8구분을 5+OTHER 로 옮기고, 답변 정답셋을 보강·수정한다 (둘 다 멱등) |
+| `scripts/add_navigation_inquiries.py` · `add_rate_inquiries.py` · `build_eval_set.py` | 원천 문의를 더하고 카테고리 균등 평가셋을 다시 뽑는다 |
+| `scripts/capture_demo.py` | 데모 화면을 캡처해 REPORT §6 의 증거 이미지를 만든다 |
 | `app.py` | Streamlit 데모 |
 | `run.sh` | 사람이 쓰는 단일 창구 (demo/check/ask/dry/eval/table) |
 | `pyproject.toml` | 패키지 정의와 의존성 — 의존성의 유일한 출처 |

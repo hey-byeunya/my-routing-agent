@@ -41,15 +41,27 @@ def _load_eval_set() -> list[dict]:
 # ---------------------------------------------------------------- 라우팅
 
 
+def _rule_decision(question: str) -> RouteDecision:
+    """규칙 라우터의 판정을 RouteDecision 으로 감싼다.
+
+    규칙에는 2순위라는 것이 없다. #33 에서 alt_route·alt_confidence 를 필수 필드로
+    올리면서 이 자리가 그대로 깨졌다 — 규칙 기준선이 그때부터 돌지 않았다.
+    1순위와 같게 둬 마진이 "갈릴 것 없음"으로 잡히게 한다.
+    """
+    from routing_agent.prompts import rule_route
+
+    route = rule_route(question)
+    return RouteDecision(route=route, confidence=0.0, reason="규칙 기반",
+                         alt_route=route, alt_confidence=0.0)
+
+
 def run_routing(llm, concurrency: int, limit: int | None, rule_only: bool = False) -> dict:
     rows = _load_eval_set()[: limit or None]
 
     started = time.monotonic()
     if rule_only:
         # LLM 없이 도는 기준선. LLM 성적을 이 수치와 견줘야 "나아졌다"고 말할 수 있다.
-        from routing_agent.prompts import rule_route
-
-        outputs = [RouteDecision(route=rule_route(r["question"]), confidence=0.0, reason="규칙 기반") for r in rows]
+        outputs = [_rule_decision(r["question"]) for r in rows]
     else:
         chain = llm.with_structured_output(RouteDecision)
         prompts = [f'{route_guide()}\n\n고객 문의: "{row["question"]}"' for row in rows]
@@ -169,9 +181,7 @@ def run_hardcases(llm, concurrency: int, limit: int | None, rule_only: bool = Fa
 
     # ── 라우팅 갈래
     if rule_only:
-        from routing_agent.prompts import rule_route
-
-        outs = [RouteDecision(route=rule_route(r["question"]), confidence=0.0, reason="규칙 기반") for r in routing_rows]
+        outs = [_rule_decision(r["question"]) for r in routing_rows]
     else:
         chain = llm.with_structured_output(RouteDecision)
         prompts = [f'{route_guide()}\n\n고객 문의: "{r["question"]}"' for r in routing_rows]
