@@ -57,10 +57,14 @@ def run_routing(llm, concurrency: int, limit: int | None, rule_only: bool = Fals
 
     results = []
     for row, out in zip(rows, outputs):
-        if isinstance(out, Exception):
+        # 구조화 출력은 예외 말고 None 으로도 실패한다 — 작은 모델이 스키마에 맞는
+        # JSON 을 못 내면 파서가 조용히 None 을 돌려준다. 그대로 두면 평가가 통째로
+        # 죽어 "약한 백엔드는 얼마나 못하는가"를 아예 잴 수 없다. 실패로 세고 계속 간다.
+        if isinstance(out, Exception) or out is None:
+            error = f"{type(out).__name__}: {out}"[:200] if out is not None else "구조화 출력 없음(None)"
             results.append(
                 {"qa_id": row["qa_id"], "question": row["question"], "gold": row["route"],
-                 "pred": None, "confidence": 0.0, "error": f"{type(out).__name__}: {out}"[:200]}
+                 "pred": None, "confidence": 0.0, "error": error}
             )
             continue
         results.append(
@@ -76,6 +80,13 @@ def run_routing(llm, concurrency: int, limit: int | None, rule_only: bool = Fals
         "accuracy": correct / len(results) if results else 0.0,
         "elapsed_s": round(elapsed, 1),
     }
+
+    if not scored:
+        # 백엔드가 한 건도 못 냈다. 그것도 결과다 — 0건으로 기록하고 끝낸다.
+        # (여기서 죽으면 "이 백엔드는 쓸 수 없다"는 사실이 기록에 남지 않는다.)
+        metrics["macro_f1"] = 0.0
+        metrics["report"] = "유효한 판정 0건 — 이 백엔드는 구조화 출력을 내지 못했다."
+        return {"task": "routing", "metrics": metrics, "results": results}
 
     try:
         from sklearn.metrics import classification_report, confusion_matrix, f1_score
