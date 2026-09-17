@@ -239,6 +239,13 @@ def main() -> int:
     parser.add_argument("--rule-baseline", action="store_true", help="LLM 없이 규칙 기준선만 잰다")
     parser.add_argument("--name", default=None, help="runs/<이름>.json 으로 저장")
     parser.add_argument("--note", default="", help="이번 시도에서 무엇을 바꿨는지. 기록표에 남는다")
+    # 아래 다섯은 "개선 시도별 기록표"의 칸을 그대로 채운다 (scripts/report_table.py).
+    # 수치만 쌓으면 나중에 왜 바꿨는지 복원할 수 없다. 잴 때 같이 적는다.
+    parser.add_argument("--round", default=None, help="회차 (예: #2). 비우면 시간순으로 매긴다")
+    parser.add_argument("--target", default="", help="변경 대상 (예: prompts.py route_guide)")
+    parser.add_argument("--why", default="", help="핵심 변경 이유")
+    parser.add_argument("--what", default="", help="핵심 변경 내용")
+    parser.add_argument("--memo", default="", help="성과 및 오답 메모")
     args = parser.parse_args()
 
     assert_split_disjoint()
@@ -270,6 +277,11 @@ def main() -> int:
         "threshold": args.threshold,
         "judge": backend_of(judge) if judge else None,
         "note": args.note,
+        "round": args.round,
+        "target": args.target,
+        "why": args.why,
+        "what": args.what,
+        "memo": args.memo,
     }
 
     name = args.name or f"{args.task}_{backend}"
@@ -286,6 +298,12 @@ def main() -> int:
         model=getattr(llm, "model_name", None) if llm else None,
         threshold=args.threshold,
         judge=backend_of(judge) if judge else None,
+        run=name,
+        round=args.round,
+        target=args.target,
+        why=args.why,
+        what=args.what,
+        memo=args.memo,
         **{k: (round(v, 4) if isinstance(v, float) else v) for k, v in summary.items()},
     )
     return 0
