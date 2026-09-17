@@ -16,7 +16,6 @@ function calling 이 없는 백엔드(claude·opencode CLI)도 같은 경로로 
 
 from __future__ import annotations
 
-import json
 import sys
 from typing import Annotated, Any, Literal, TypedDict
 

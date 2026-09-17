@@ -161,6 +161,10 @@ def get_bulk_rate(box_count: int, weight_kg: float, size_cm: float, region: str 
     }
 
 
+# 아래 둘은 도구로 노출하지 않는다. 소호 운임과 반입 제한은 건별로 달라지는 값이
+# 아니라 매뉴얼(§4.4·§7)이 답할 몫이기 때문이다. 그래도 남겨 두는 것은
+# check_mockdb 가 이 값들로 **목데이터와 매뉴얼의 주장이 어긋나지 않는지**를
+# 확인하기 때문이다 (현금 접수 불가, 소호 운임 미공개 표기).
 def get_biz_rate() -> dict:
     """소호사업자 운임은 매뉴얼에 값이 없다. 지어내지 않고 조회 필요로 돌려준다."""
     return {
@@ -194,10 +198,6 @@ def get_tracking_status(tracking_number: str) -> dict:
 # ---------------------------------------------------------------- 규칙 조회
 
 
-def get_box_size_rule() -> dict:
-    return _db()["box_size_rule"]
-
-
 def get_restricted_items(item: str | None = None) -> dict:
     rules = _db()["restricted_items"]
     if not item:
@@ -216,33 +216,6 @@ def get_restricted_items(item: str | None = None) -> dict:
                 "note": "택배사마다 기준이 다르다. 단정하지 말고 선택한 택배사 기준을 확인하도록 안내",
             }
     return {"item": text, "verdict": "목록에 없음", "note": "목록에 없다고 무조건 가능하다는 뜻은 아니다. 택배사 기준 확인 필요"}
-
-
-def get_cancel_rule(stage: str | None = None) -> dict:
-    rules = _db()["cancel_change_rule"]
-    if not stage:
-        return rules
-    text = stage.strip()
-    if "접수" in text and "전" in text:
-        return {"stage": text, "rule": rules["before_carrier_accept"], "note": rules["note"]}
-    return {"stage": text, "rule": rules["after_tracking_issued"], "note": rules["note"]}
-
-
-def get_order_sync_troubleshoot(symptom: str) -> dict:
-    guide = _db()["today_orders_troubleshoot"]
-    text = (symptom or "").strip()
-    key = "tracking_not_registered" if ("운송장" in text or "송장" in text) else "orders_not_collected"
-    return {"symptom": text, "case": key, **guide[key]}
-
-
-def get_service_guide(service: str | None = None) -> dict:
-    services = _db()["services"]
-    if not service:
-        return {"services": {k: v.get("summary") or v for k, v in services.items()}, "compare": _db()["cvs_vs_visit_guide"]}
-    name = service.strip().upper()
-    if name not in services:
-        return {"error": f"'{service}' 는 등록된 서비스 구분이 아니다", "available": sorted(services)}
-    return {"service": name, **services[name]}
 
 
 def escalate_to_agent(reason: str, summary: str, sentiment: str = "neutral") -> dict:
