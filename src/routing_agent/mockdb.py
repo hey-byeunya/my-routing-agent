@@ -91,7 +91,9 @@ def _rate(group: str, carrier_name: str, weight_kg: float, size_cm: float, regio
         "fee": tier["fee"],
         "currency": "KRW",
         "is_snapshot": True,
-        "note": "매뉴얼 스냅샷 값이다. 확정 금액은 예약 화면에서 확인해야 한다",
+        # 이 문구는 모델이 고객 답변에 거의 그대로 옮긴다. "스냅샷"처럼 내부에서만
+        # 쓰는 말을 넣으면 고객이 못 알아듣는다. 뜻은 같게, 말은 고객용으로.
+        "note": "기본 운임 기준 금액이다. 확정 금액은 예약 화면에서 확인해야 한다",
     }
     if carrier.get("note"):
         result["carrier_note"] = carrier["note"]
@@ -153,7 +155,9 @@ def get_bulk_rate(box_count: int, weight_kg: float, size_cm: float, region: str 
         "cheapest_product": confirmed[0]["product"] if confirmed else None,
         "options": matches,
         "is_snapshot": True,
-        "note": "매뉴얼 스냅샷 값이다. 확정 금액은 예약 화면에서 확인해야 한다",
+        # 이 문구는 모델이 고객 답변에 거의 그대로 옮긴다. "스냅샷"처럼 내부에서만
+        # 쓰는 말을 넣으면 고객이 못 알아듣는다. 뜻은 같게, 말은 고객용으로.
+        "note": "기본 운임 기준 금액이다. 확정 금액은 예약 화면에서 확인해야 한다",
     }
 
 
