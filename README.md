@@ -82,12 +82,13 @@ python -m routing_agent.agent --backend replay "편의점택배 접수하면 언
 ```bash
 python scripts/check_context.py          # ① 카테고리별 근거 절 매핑·크기·겹침
 python scripts/check_mockdb.py           # ② 조회 도구가 무엇을 돌려주는가 (이름 해석·구간·할증)
-python scripts/check_grader.py           # ③ 모범 답안이 채점기에서 전부 만점인가
-python -m routing_agent.agent --dry-run "문의"      # ④ LLM 없이 앞단
-python -m routing_agent.llm_backends --smoke --backend all   # ⑤ 백엔드가 같은 구조로 답하는가
+python scripts/check_policy.py           # ③ 언제 사람에게 넘기는가 (되묻기 한도·반복 판단)
+python scripts/check_grader.py           # ④ 모범 답안이 채점기에서 전부 만점인가
+python -m routing_agent.agent --dry-run "문의"      # ⑤ LLM 없이 앞단
+python -m routing_agent.llm_backends --smoke --backend all   # ⑥ 백엔드가 같은 구조로 답하는가
 ```
 
-①~③ 이 통과하기 전의 성능 수치는 믿지 않는다. ③ 이 떨어지면 에이전트가 아니라 **채점기나 정답셋이 틀린 것이다.**
+①~④ 가 통과하기 전의 성능 수치는 믿지 않는다. ④ 가 떨어지면 에이전트가 아니라 **채점기나 정답셋이 틀린 것이다.**
 
 ## 평가 점검
 
@@ -183,7 +184,7 @@ python -m routing_agent.evaluate --task answer --backend openai --name answer_20
 | `src/routing_agent/guardrail.py` | 근거에 없는 수치가 답변에 섞였는지 기계적으로 검사 |
 | `src/routing_agent/grader.py` · `src/routing_agent/evaluate.py` | 두 지표 채점과 평가 실행기 |
 | `src/routing_agent/record.py` | `store/metrics.jsonl` 에 1줄 1레코드로 덧붙인다 |
-| `scripts/check_*.py` | LLM 없이 도는 픽스처 검증 (근거 매핑 · 조회 도구 · 채점기) |
+| `scripts/check_*.py` | LLM 없이 도는 픽스처 검증 (근거 매핑 · 조회 도구 · 이관 판단 · 채점기) |
 | `scripts/report_table.py` | 그 기록에서 회차별 종합 기록표를 뽑는다 |
 | `scripts/add_navigation_inquiries.py` · `build_eval_set.py` | 원천 문의를 더하고 카테고리 균등 평가셋을 다시 뽑는다 |
 | `app.py` | Streamlit 데모 |

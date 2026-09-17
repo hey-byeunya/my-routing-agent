@@ -83,6 +83,8 @@ case "$cmd" in
     echo
     $PY scripts/check_mockdb.py
     echo
+    $PY scripts/check_policy.py
+    echo
     $PY scripts/check_grader.py
     ;;
   ask)   shift; exec $PY -m routing_agent.agent "$@" ;;

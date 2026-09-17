@@ -35,6 +35,10 @@ from routing_agent.tools import ALL_TOOLS, tool_menu, tools_for
 # 0.4→1.000, 0.3→1.000. 0.3 과 0.4 가 같으므로 더 보수적인 쪽을 택한다.
 # 주의: 평가셋 위에서 훑은 값이라 그만큼 낙관적이다 (REPORT §4 에 고지).
 DEFAULT_THRESHOLD = 0.4
+# 같은 사안을 이 횟수만큼 되묻고도 확신이 서지 않으면 사람에게 넘긴다.
+# 정책 §10.2 가 "동일 사안 3회 이상"을 이관 조건으로 두는 것에 맞춘다.
+ASK_LIMIT = 3
+
 ESCALATE_FALLBACK_TEXT = (
     "죄송합니다. 문의하신 내용을 정확히 확인하기 어려워 담당자에게 연결해 드리겠습니다."
 )
@@ -65,16 +69,32 @@ def _history_text(history: list[tuple] | None) -> str:
     return "\n".join(f"{who.get(item[0], item[0])}: {item[1]}" for item in history if item[1])
 
 
-def asked_before(history: list[tuple] | None, route: str | None) -> bool:
-    """이 사안으로 이미 상담원이 되물은 적이 있는가.
+def asks_on_issue(history: list[tuple] | None, route: str | None) -> int:
+    """이 사안으로 상담원이 이미 몇 번 답했는가.
 
-    이력 항목에 카테고리가 없으면(옛 형식) 판단하지 않는다 — 모르는 채로
-    "이미 물어봤다"고 보면 첫 문의를 이관해 버린다.
+    이력 항목에 카테고리가 없으면(옛 형식) 0 으로 본다 — 모르는 채로 "이미
+    물어봤다"고 세면 첫 문의를 이관해 버린다.
     """
     if not history or not route:
+        return 0
+    return sum(1 for item in history
+               if len(item) >= 3 and item[0] == "agent" and item[2] == route and item[1])
+
+
+def should_escalate(route: str | None, confidence: float, history: list[tuple] | None,
+                    threshold: float = DEFAULT_THRESHOLD, ask_limit: int = ASK_LIMIT) -> bool:
+    """이 턴을 사람에게 넘길 것인가. LLM 없이 도는 순수 함수라 픽스처로 검증한다.
+
+    규칙 세 줄이다.
+      · 범위 밖(OTHER)은 넘기지 않는다 — 채널 안내로 끝낸다(§10.1).
+      · 확신이 서면 넘기지 않는다.
+      · 확신이 안 서면, 같은 사안을 ask_limit 번 되물은 뒤에 넘긴다(§10.2).
+    """
+    if route == "OTHER":
         return False
-    return any(len(item) >= 3 and item[0] == "agent" and item[2] == route and item[1]
-               for item in history)
+    if confidence >= threshold:
+        return False
+    return asks_on_issue(history, route) >= ask_limit
 
 
 def conversation_progress(history: list[tuple] | None, route: str | None = None) -> str:
@@ -182,18 +202,15 @@ def build_graph(
         확신도가 낮은 데에는 두 가지가 섞여 있다. 고객이 아직 정보를 덜 준 것과,
         줄 만큼 줬는데도 우리가 못 푸는 것. 앞의 것은 사람에게 넘길 일이 아니다 —
         "얼마에요?" 한 마디에 담당자를 부르면 고객은 되물음 한 번이면 끝날 일에
-        상담원을 기다린다. 정책 §10.2 의 이관 조건에도 "분류 확신도가 낮음"은 없고,
-        §2·PLAN_RULES 는 첫 문의에 바로 이관하지 말라고 한다.
+        상담원을 기다린다. 정책 §10.2 의 이관 조건에도 "분류 확신도가 낮음"은 없다.
 
-        그래서 **같은 사안을 이미 되물었는데도 확신이 서지 않을 때만** 넘긴다.
-        한 번도 안 물어봤으면 계획 단계로 보내 되묻게 한다. OTHER 도 넘기지
-        않는다 — 범위 밖은 이관이 아니라 채널 안내로 끝낸다(§10.1).
+        그래서 같은 사안에서 **ASK_LIMIT 번까지는 되묻고**, 그러고도 확신이 서지
+        않으면 넘긴다. OTHER 는 확신도와 무관하게 넘기지 않는다 — 범위 밖은
+        이관이 아니라 채널 안내로 끝낸다(§10.1).
         """
-        if state.get("route") == "OTHER":
-            return "plan"
-        if state.get("confidence", 0.0) >= threshold:
-            return "plan"
-        return "escalate" if asked_before(state.get("history"), state.get("route")) else "plan"
+        return "escalate" if should_escalate(
+            state.get("route"), state.get("confidence", 0.0) or 0.0, state.get("history"), threshold
+        ) else "plan"
 
     # ------------------------------------------------------------ 3/6 계획
     def plan(state: AgentState) -> dict:
