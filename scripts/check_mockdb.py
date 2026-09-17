@@ -60,6 +60,22 @@ def main() -> int:
     cash = mockdb.get_restricted_items("현금")
     check("현금은 접수 불가로 판정된다", "불가" in str(cash.get("verdict", "")), str(cash)[:120])
 
+    # ── 데이터 무결성 (택배사·브랜드를 새로 넣었을 때 여기서 걸린다) ──────
+    db = mockdb._db()
+    for group, carriers in db["carriers"].items():
+        for name, row in carriers.items():
+            tiers = row.get("tiers")
+            check(f"[{group}] {name} 에 운임 구간이 있다", bool(tiers))
+            if not tiers:
+                continue
+            bad = [t for t in tiers
+                   if not all(k in t for k in ("max_weight_kg", "max_size_cm", "fee"))]
+            check(f"[{group}] {name} 구간에 무게·크기·요금이 다 있다", not bad, str(bad)[:120])
+            probe = mockdb._rate(group, name, 1, 60, "제주") if group != "bulk_discount" else {}
+            if group != "bulk_discount":
+                check(f"[{group}] {name} 을 이름으로 조회할 수 있다",
+                      "error" not in probe or "구간" in str(probe.get("error", "")), str(probe)[:120])
+
     print()
     if FAILED:
         print(f"FAIL check_mockdb — {len(FAILED)}건 실패: {', '.join(FAILED)}")

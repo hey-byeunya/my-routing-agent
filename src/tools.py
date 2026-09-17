@@ -26,13 +26,28 @@ from langchain_core.tools import tool
 from src import mockdb
 
 
+def _names(group: str) -> str:
+    """목데이터에 실제로 있는 이름을 쉼표로 잇는다."""
+    return ", ".join(sorted(mockdb.carrier_names(group)))
+
+
+def _fill_names() -> None:
+    """도구 설명에 붙는 이름 목록을 데이터에서 채운다.
+
+    택배사·편의점 브랜드가 늘 때 코드를 고치게 두면, 데이터에는 있는데 도구
+    설명에는 없는 상태가 조용히 생긴다. 모델은 설명만 보고 고르므로 그러면
+    새 택배사를 영영 못 부른다. 이름의 출처를 목데이터 한 곳으로 둔다.
+    """
+    get_visit_rate.description += f"\ncarrier 예: {_names('visit_pickup')}."
+    get_cvs_rate.description += f"\nbrand 예: {_names('cvs_pickup')}."
+
+
 @tool
 def get_visit_rate(carrier: str, weight_kg: float, size_cm: float, region: Optional[str] = None) -> dict:
     """방문택배 운임을 택배사·무게·크기 구간으로 조회한다.
 
     size_cm 은 가로+세로+높이 세 변의 합이다. 제주·도서처럼 지역이 언급되면
     region 을 함께 준다 — 지역 추가운임은 택배사마다 다르다.
-    carrier 예: 롯데택배, 한진택배, CJ대한통운, 우체국택배.
     """
     return mockdb.get_visit_rate(carrier, weight_kg, size_cm, region)
 
@@ -42,8 +57,6 @@ def get_cvs_rate(brand: str, weight_kg: float, size_cm: float, region: Optional[
     """편의점택배 운임을 브랜드·무게·크기 구간으로 조회한다.
 
     브랜드마다 기본 운임과 제주·도서 이용 가능 여부가 다르므로 지역을 먼저 확인한다.
-    brand 예: CU편의점택배, GS편의점택배, 이마트24편의점택배, 세븐일레븐 편의점택배,
-    GS25 반값택배, CU반값택배, 세븐일레븐 착한택배.
     """
     return mockdb.get_cvs_rate(brand, weight_kg, size_cm, region)
 
@@ -126,3 +139,6 @@ def tool_menu(route: str) -> str:
         summary = (t.description or "").strip().splitlines()[0]
         lines.append(f"- {t.name}({params}) — {summary}")
     return "\n".join(lines)
+
+
+_fill_names()

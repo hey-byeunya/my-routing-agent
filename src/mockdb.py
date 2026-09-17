@@ -45,6 +45,11 @@ def _surcharge(carrier: dict, region: str | None) -> dict:
     return {"region": text, "surcharge": 0}
 
 
+def carrier_names(group: str) -> list[str]:
+    """이 그룹에 등록된 이름. 도구 설명과 화면이 여기서 이름을 얻는다."""
+    return sorted(_db()["carriers"].get(group, {}))
+
+
 def _rate(group: str, carrier_name: str, weight_kg: float, size_cm: float, region: str | None) -> dict:
     carriers = _db()["carriers"][group]
     carrier = carriers.get(carrier_name)
