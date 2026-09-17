@@ -31,10 +31,14 @@ def _numbers(text: str) -> list[int]:
     return out
 
 
-def check_guardrail(answer: str, tool_results: list[str], context: str = "") -> dict:
-    """근거에서 찾을 수 없는 큰 수를 골라낸다."""
+def check_guardrail(answer: str, tool_results: list[str], context: str = "", said: str = "") -> dict:
+    """근거에서 찾을 수 없는 큰 수를 골라낸다.
+
+    `said` 는 고객이 직접 말한 것(이번 문의와 이전 대화)이다. 고객이 준
+    예약번호·운송장번호를 되읽어 주는 것은 날조가 아니므로 근거로 친다.
+    """
     grounded: set[int] = set()
-    for source in [*tool_results, context]:
+    for source in [*tool_results, context, said]:
         grounded.update(_numbers(str(source)))
 
     # 조회 결과 두 값의 한 단계 산술(합·차)로 설명되면 허용한다.

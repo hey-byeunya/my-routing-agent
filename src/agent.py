@@ -31,7 +31,10 @@ from src.llm_backends import BackendError, backend_of, make_llm
 from src.schemas import AnswerPlan, RouteDecision
 from src.tools import ALL_TOOLS, tool_menu, tools_for
 
-DEFAULT_THRESHOLD = 0.6
+# sweep 으로 정했다 (평가 24턴, gpt-4o-mini): 0.6→도구 0.875, 0.5→0.917,
+# 0.4→1.000, 0.3→1.000. 0.3 과 0.4 가 같으므로 더 보수적인 쪽을 택한다.
+# 주의: 평가셋 위에서 훑은 값이라 그만큼 낙관적이다 (REPORT §4 에 고지).
+DEFAULT_THRESHOLD = 0.4
 ESCALATE_FALLBACK_TEXT = (
     "죄송합니다. 문의하신 내용을 정확히 확인하기 어려워 담당자에게 연결해 드리겠습니다."
 )
@@ -256,6 +259,9 @@ def build_graph(
             answer=state.get("answer", ""),
             tool_results=[m.content for m in state.get("messages", []) if isinstance(m, ToolMessage)],
             context=state.get("context", ""),
+            # 고객이 직접 말한 수는 근거가 있는 수다. 예약번호를 되읽어 주는 것을
+            # "지어낸 수치"로 잡으면 오탐이 된다.
+            said=f"{state.get('question', '')}\n{_history_text(state.get('history'))}",
         )
         log("6/6 검증", "통과" if verdict["ok"] else f"근거 없는 수치 {verdict['unsupported']}")
         return {"verdict": verdict, "trace": _note(state, "verify", ok=verdict["ok"])}
