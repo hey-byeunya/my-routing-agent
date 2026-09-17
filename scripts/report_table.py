@@ -23,8 +23,7 @@ from pathlib import Path
 
 from routing_agent.record import read_all
 
-COLUMNS = ["회차", "변경 대상", "핵심 변경 이유 (Why)", "핵심 변경 내용 (What)",
-           "라우팅 (정확도 / macro F1)", "답변 (도구 / 적절성)", "성과 및 오답 메모"]
+COLUMNS = ['회차', '변경 대상', '핵심 변경 이유 (Why)', '핵심 변경 내용 (What)', '라우팅 (정확도 / macro F1)', '답변 (도구 / 적절성)', '하드케이스 45건 (라우팅 / 되물음)', '성과 및 오답 메모']
 
 
 def _rounds(rows: list[dict]) -> list[dict]:
@@ -32,6 +31,17 @@ def _rounds(rows: list[dict]) -> list[dict]:
     order: list[str] = []
     by_key: dict[str, dict] = {}
     auto = 0
+    # 자동 번호는 명시된 회차 번호를 피해야 한다. 안 그러면 round 를 안 달고 돌린
+    # 측정이 같은 번호의 옛 회차 칸에 섞여 들어가 그 회차 수치를 오염시킨다.
+    taken = {row.get("round") for row in rows if row.get("round")}
+
+    def next_auto() -> str:
+        nonlocal auto
+        while f"#{auto}" in taken:
+            auto += 1
+        key = f"#{auto}"
+        auto += 1
+        return key
 
     for row in rows:
         stage = row.get("stage", "")
@@ -44,15 +54,14 @@ def _rounds(rows: list[dict]) -> list[dict]:
 
         key = row.get("round")
         if not key:
-            key = f"#{auto}"
-            auto += 1
+            key = next_auto()
             legacy = True
         else:
             legacy = False
         if key not in by_key:
             order.append(key)
             by_key[key] = {"round": key, "legacy": legacy, "memos": [], "routing": [], "answer": [],
-                           "target": "", "why": "", "what": ""}
+                           "hardcases": [], "target": "", "why": "", "what": ""}
         entry = by_key[key]
         for field in ("target", "why", "what"):
             if row.get(field):
@@ -63,7 +72,8 @@ def _rounds(rows: list[dict]) -> list[dict]:
             entry["what"] = row["detail"]
         # 한 회차에서 여러 번 잴 수 있다 (백엔드 비교가 그렇다). 마지막 것만 남기면
         # 나머지 측정이 표에서 사라진다.
-        entry["routing" if stage == "eval_routing" else "answer"].append(row)
+        bucket = {"eval_routing": "routing", "eval_hardcases": "hardcases"}.get(stage, "answer")
+        entry[bucket].append(row)
 
     return [by_key[k] for k in order]
 
@@ -79,8 +89,8 @@ def _tag(row: dict) -> str:
 
 
 def _cells(entry: dict) -> list[str]:
-    routing, answer = entry["routing"], entry["answer"]
-    many = len(routing) > 1 or len(answer) > 1
+    routing, answer, hard = entry["routing"], entry["answer"], entry["hardcases"]
+    many = len(routing) > 1 or len(answer) > 1 or len(hard) > 1
 
     def line(row: dict, fields: tuple[str, str], unit: str) -> str:
         head = f"{_tag(row)} " if many else ""
@@ -89,8 +99,14 @@ def _cells(entry: dict) -> list[str]:
 
     left = "<br>".join(line(r, ("accuracy", "macro_f1"), "건") for r in routing) or "—"
     right = "<br>".join(line(a, ("tool_score", "answer_score"), "턴") for a in answer) or "—"
+    # 하드케이스는 라우팅 30건과 되물음 15건으로 재는 것이 달라 한 칸에 둘 다 적는다.
+    hard_cell = "<br>".join(
+        f"{_tag(h) + ' ' if many else ''}라우팅 {_fmt(h.get('route_accuracy'))}"
+        f"(대안 {_fmt(h.get('route_lenient_accuracy'))}) · 되물음 {_fmt(h.get('ask_rate'))}"
+        for h in hard
+    ) or "—"
 
-    first = (routing + answer)[0] if (routing or answer) else {}
+    first = (routing + answer + hard)[0] if (routing or answer or hard) else {}
     label = entry["round"] + ("" if many else f"<br>`{_tag(first)}`" if first.get("backend") else "")
     return [
         label,
@@ -99,6 +115,7 @@ def _cells(entry: dict) -> list[str]:
         entry["what"] or "—",
         left,
         right,
+        hard_cell,
         "<br>".join(m for m in entry["memos"] if m) or "—",
     ]
 

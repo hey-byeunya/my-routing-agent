@@ -128,6 +128,160 @@ def print_routing(payload: dict) -> None:
             print(f"  {r['gold']:<16} → {r['pred']:<16} conf={r['confidence']:.2f}  {r['question'][:44]}")
 
 
+
+# ---------------------------------------------------------------- 하드케이스
+
+
+def _load_hard_cases() -> list[dict]:
+    import csv
+
+    path = BASE / "data" / "hard_cases.csv"
+    with path.open(encoding="utf-8-sig", newline="") as fh:
+        return list(csv.DictReader(fh))
+
+
+# 라벨이 OTHER 지만 뜻이 "응대 범위 밖"이 아닌 유형.
+# expected_behavior 가 "되물어야 한다"·"앞 턴을 봐야 안다"고 적고 있다. 우리 OTHER 는
+# 채널 안내로 대화를 끝내는 칸이라 뜻이 정반대다 — 이 15건을 라우팅 정확도로 재면
+# "얼마예요?" 에 '도와드리기 어렵습니다' 라고 답하는 것을 정답으로 세게 된다.
+# 그래서 이 유형은 카테고리가 아니라 **되물었는가(action==ASK)** 로 잰다.
+ASK_EXPECTED_TYPES = {"극단단답", "문맥의존"}
+
+
+def run_hardcases(llm, concurrency: int, limit: int | None, rule_only: bool = False,
+                  threshold: float = DEFAULT_THRESHOLD) -> dict:
+    """분류기가 틀리기 쉬운 자리만 모은 45건. 유형마다 재는 것이 다르다.
+
+    평가셋 42건은 평범한 문의라 수치가 후하게 나온다. 여기는 여섯 유형이고,
+    **유형별로 갈라 봐야 "어떤 종류의 문의에 약한가"가 드러난다.**
+
+    두 갈래로 나눠 잰다.
+      · 라우팅 30건 (경계모호·다중의도·텍스트손상·분류체계밖) — 카테고리를 맞히는가.
+        경계모호·다중의도는 데이터가 대안 라우트를 인정하므로 엄격/관대 둘 다 낸다.
+      · 되물음 15건 (극단단답·문맥의존) — 카테고리가 아니라 되물었는가로 잰다.
+        파이프라인을 끝까지 돌려 action 을 본다.
+    """
+    rows = _load_hard_cases()[: limit or None]
+    routing_rows = [r for r in rows if r["hard_type"] not in ASK_EXPECTED_TYPES]
+    ask_rows = [r for r in rows if r["hard_type"] in ASK_EXPECTED_TYPES]
+
+    started = time.monotonic()
+
+    # ── 라우팅 갈래
+    if rule_only:
+        from routing_agent.prompts import rule_route
+
+        outs = [RouteDecision(route=rule_route(r["question"]), confidence=0.0, reason="규칙 기반") for r in routing_rows]
+    else:
+        chain = llm.with_structured_output(RouteDecision)
+        prompts = [f'{route_guide()}\n\n고객 문의: "{r["question"]}"' for r in routing_rows]
+        outs = chain.batch(prompts, config={"max_concurrency": concurrency}, return_exceptions=True)
+
+    results = []
+    for row, out in zip(routing_rows, outs):
+        gold, alt = row["route_expected_v2"], (row.get("route_alt_v2") or "").strip()
+        base = {"qa_id": row["qa_id"], "hard_type": row["hard_type"], "measure": "route",
+                "question": row["question"], "gold": gold, "alt": alt,
+                "expected_behavior": row.get("expected_behavior", "")}
+        if isinstance(out, Exception) or out is None:
+            reason = f"{type(out).__name__}: {out}"[:200] if isinstance(out, Exception) else "구조화 출력 실패(None)"
+            results.append({**base, "pred": None, "confidence": 0.0, "ok": False, "lenient": False, "error": reason})
+            continue
+        ok = out.route == gold
+        results.append({**base, "pred": out.route, "confidence": out.confidence, "reason": out.reason,
+                        "ok": ok, "lenient": ok or (bool(alt) and out.route == alt)})
+
+    # ── 되물음 갈래 (파이프라인을 끝까지 돌려야 action 이 나온다)
+    if ask_rows:
+        if rule_only:
+            for row in ask_rows:
+                results.append({"qa_id": row["qa_id"], "hard_type": row["hard_type"], "measure": "ask",
+                                "question": row["question"], "gold": "ASK", "alt": "",
+                                "expected_behavior": row.get("expected_behavior", ""),
+                                "pred": None, "confidence": 0.0, "ok": False, "lenient": False,
+                                "error": "규칙 기준선은 파이프라인을 돌리지 않는다"})
+        else:
+            graph = build_graph(llm=llm, threshold=threshold)
+            inputs = [{"question": r["question"], "history": [], "messages": [], "trace": []} for r in ask_rows]
+            states = graph.batch(inputs, config={"max_concurrency": concurrency}, return_exceptions=True)
+            for row, st in zip(ask_rows, states):
+                base = {"qa_id": row["qa_id"], "hard_type": row["hard_type"], "measure": "ask",
+                        "question": row["question"], "gold": "ASK", "alt": "",
+                        "expected_behavior": row.get("expected_behavior", "")}
+                if isinstance(st, Exception):
+                    results.append({**base, "pred": None, "confidence": 0.0, "ok": False, "lenient": False,
+                                    "error": f"{type(st).__name__}: {st}"[:200]})
+                    continue
+                action = st.get("action")
+                results.append({**base, "pred": action, "route_pred": st.get("route"),
+                                "confidence": st.get("confidence", 0.0), "answer": st.get("answer", ""),
+                                "ok": action == "ASK", "lenient": action == "ASK"})
+
+    elapsed = time.monotonic() - started
+
+    by_type: dict[str, dict] = {}
+    for r in results:
+        t = by_type.setdefault(r["hard_type"], {"n": 0, "ok": 0, "lenient": 0, "conf": [], "measure": r["measure"]})
+        t["n"] += 1
+        t["ok"] += r["ok"]
+        t["lenient"] += r["lenient"]
+        if r["pred"]:
+            t["conf"].append(r["confidence"])
+    for t in by_type.values():
+        t["acc"] = t["ok"] / t["n"]
+        t["lenient_acc"] = t["lenient"] / t["n"]
+        t["mean_conf"] = round(sum(t["conf"]) / len(t["conf"]), 2) if t["conf"] else 0.0
+        t.pop("conf")
+
+    route_res = [r for r in results if r["measure"] == "route"]
+    ask_res = [r for r in results if r["measure"] == "ask"]
+    correct = [r["confidence"] for r in route_res if r["ok"] and r["pred"]]
+    wrong = [r["confidence"] for r in route_res if not r["ok"] and r["pred"]]
+    metrics = {
+        "n": len(results),
+        "errors": sum(1 for r in results if not r["pred"]),
+        "route_n": len(route_res),
+        "route_accuracy": sum(r["ok"] for r in route_res) / (len(route_res) or 1),
+        "route_lenient_accuracy": sum(r["lenient"] for r in route_res) / (len(route_res) or 1),
+        "ask_n": len(ask_res),
+        "ask_rate": sum(r["ok"] for r in ask_res) / (len(ask_res) or 1),
+        "elapsed_s": round(elapsed, 1),
+        "by_type": by_type,
+        # 확신도가 난이도를 알아채는가. 틀린 건의 확신도가 낮아야 게이트(τ)가 걸러낸다.
+        "mean_conf_correct": round(sum(correct) / len(correct), 3) if correct else None,
+        "mean_conf_wrong": round(sum(wrong) / len(wrong), 3) if wrong else None,
+        "wrong_below_tau": sum(1 for r in route_res if not r["ok"] and r["pred"] and r["confidence"] < threshold),
+        "wrong_total": len(wrong),
+        "tau": threshold,
+    }
+    return {"task": "hardcases", "metrics": metrics, "results": results}
+
+
+def print_hardcases(payload: dict) -> None:
+    m = payload["metrics"]
+    print(f"\n하드케이스 {m['n']}건 · {m['elapsed_s']}초"
+          + (f" · 호출 실패 {m['errors']}건" if m["errors"] else ""))
+    print(f"  라우팅 {m['route_n']}건 — 엄격 {m['route_accuracy']:.3f} · 대안 인정 {m['route_lenient_accuracy']:.3f}")
+    print(f"  되물음 {m['ask_n']}건 — 되물은 비율 {m['ask_rate']:.3f}  (카테고리가 아니라 행동으로 잰다)")
+
+    print(f"\n{'유형':<12}{'재는 것':<8}{'건수':>4}{'정답':>8}{'대안인정':>9}{'평균 확신도':>11}")
+    for t, v in sorted(m["by_type"].items(), key=lambda kv: kv[1]["acc"]):
+        label = "되물음" if v["measure"] == "ask" else "카테고리"
+        print(f"{t:<12}{label:<8}{v['n']:>4}{v['acc']:>8.3f}{v['lenient_acc']:>9.3f}{v['mean_conf']:>11.2f}")
+
+    if m["mean_conf_correct"] is not None:
+        print(f"\n확신도(라우팅 갈래): 맞은 건 평균 {m['mean_conf_correct']} · 틀린 건 평균 {m['mean_conf_wrong']}")
+        print(f"틀린 {m['wrong_total']}건 중 확신도 τ({m['tau']}) 미만은 {m['wrong_below_tau']}건 "
+              f"— 게이트가 걸러 되묻게 되는 몫이다")
+
+    wrong = [r for r in payload["results"] if r["pred"] and not r["ok"]]
+    if wrong:
+        print(f"\n틀린 {len(wrong)}건")
+        for r in sorted(wrong, key=lambda r: (r["measure"], r["hard_type"])):
+            mark = "대안" if r["lenient"] else "  "
+            print(f"  {mark} {r['hard_type']:<10} {r['gold']:<10} → {str(r['pred']):<16} conf={r['confidence']:.2f}  {r['question'][:34]}")
+
+
 # ---------------------------------------------------------------- 답변
 
 
@@ -241,7 +395,7 @@ def print_answer(payload: dict) -> None:
 def main() -> int:
     load_dotenv(BASE / ".env")
     parser = argparse.ArgumentParser(description="라우팅 에이전트 평가")
-    parser.add_argument("--task", choices=["routing", "answer"], default="answer")
+    parser.add_argument("--task", choices=["routing", "answer", "hardcases"], default="answer")
     parser.add_argument("--backend", default=None)
     parser.add_argument("--model", default=None)
     parser.add_argument("--judge-backend", default=None, help="답변 적절성 LLM 판정기. 비우면 문자열 매칭만")
@@ -251,6 +405,8 @@ def main() -> int:
     parser.add_argument("--rule-baseline", action="store_true", help="LLM 없이 규칙 기준선만 잰다")
     parser.add_argument("--name", default=None, help="runs/<이름>.json 으로 저장")
     parser.add_argument("--note", default="", help="이번 시도에서 무엇을 바꿨는지. 기록표에 남는다")
+    parser.add_argument("--round", default=None,
+                        help="회차 번호 (예: #28). 안 주면 기록표가 시간순으로 자동 부여한다")
     # 아래 다섯은 "개선 시도별 기록표"의 칸을 그대로 채운다 (scripts/report_table.py).
     # 수치만 쌓으면 나중에 왜 바꿨는지 복원할 수 없다. 잴 때 같이 적는다.
     parser.add_argument("--round", default=None, help="회차 (예: #2). 비우면 시간순으로 매긴다")
@@ -271,7 +427,14 @@ def main() -> int:
     print(f"백엔드 {backend} · 모델 {getattr(llm, 'model_name', '?')} · 동시 실행 {concurrency}"
           + (f" · 판정기 {backend_of(judge)}" if judge else " · 판정기 없음(문자열 매칭만)"))
 
-    if args.task == "routing":
+    if args.task == "hardcases":
+        payload = run_hardcases(llm, concurrency, args.limit,
+                                rule_only=args.rule_baseline, threshold=args.threshold)
+        print_hardcases(payload)
+        summary = {"route_accuracy": payload["metrics"]["route_accuracy"],
+                   "route_lenient_accuracy": payload["metrics"]["route_lenient_accuracy"],
+                   "ask_rate": payload["metrics"]["ask_rate"]}
+    elif args.task == "routing":
         payload = run_routing(llm, concurrency, args.limit, rule_only=args.rule_baseline)
         print_routing(payload)
         summary = {"accuracy": payload["metrics"]["accuracy"], "macro_f1": payload["metrics"].get("macro_f1")}
@@ -306,6 +469,7 @@ def main() -> int:
         f"eval_{args.task}",
         payload["metrics"]["n"],
         detail=args.note or name,
+        round=getattr(args, "round", None),
         backend=backend,
         model=getattr(llm, "model_name", None) if llm else None,
         threshold=args.threshold,

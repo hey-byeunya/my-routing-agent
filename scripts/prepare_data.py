@@ -67,6 +67,35 @@ def reserve_other_fewshot(path: Path, n: int = 2) -> list[str]:
     return moved
 
 
+def add_alt_column(path: Path) -> tuple[int, int]:
+    """hard_cases 의 대안 라우트를 병합 기준으로 옮긴다.
+
+    route_alt 는 원본 8구분으로 적혀 있다(BIZ_ACCOUNT·BULK_DISCOUNT·ORDER_SYNC).
+    5+OTHER 로 병합하면 대안이 정답과 같은 칸으로 접히는 경우가 생긴다 —
+    "BIZ_BULK vs BIZ_ACCOUNT" 는 병합 뒤 둘 다 BIZ_BULK 다. 그런 건은 더 이상
+    두 갈래가 아니므로 빈칸으로 둔다. 채점에서 "대안도 정답" 처리를 할 때
+    실제로 갈리는 건만 세기 위해서다.
+    """
+    fields, rows = _read_csv(path)
+    if "route_alt_v2" not in fields:
+        fields = fields + ["route_alt_v2"]
+    kept = collapsed = 0
+    for row in rows:
+        raw = (row.get("route_alt") or "").strip()
+        if not raw:
+            row["route_alt_v2"] = ""
+            continue
+        merged = merge_route(raw)
+        if merged == row["route_expected_v2"]:
+            row["route_alt_v2"] = ""
+            collapsed += 1
+        else:
+            row["route_alt_v2"] = merged
+            kept += 1
+    _write_csv(path, fields, rows)
+    return kept, collapsed
+
+
 def merge_goldenset(path: Path) -> Counter:
     data = json.loads(path.read_text(encoding="utf-8"))
     counts: Counter = Counter()
@@ -96,6 +125,9 @@ def main() -> int:
         add_column(DATA / "hard_cases.csv", "route_expected", "route_expected_v2"),
         "건",
     )
+    kept, collapsed = add_alt_column(DATA / "hard_cases.csv")
+    print(f"\nhard_cases.csv → route_alt_v2: 대안이 살아 있는 건 {kept}개, "
+          f"병합으로 정답과 같아져 접힌 건 {collapsed}개")
     _show("answer_goldenset.json → route", merge_goldenset(DATA / "answer_goldenset.json"), "대화")
     print("\nOK prepare_data")
     return 0
