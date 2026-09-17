@@ -166,6 +166,10 @@ def run_answer(llm, threshold: float, concurrency: int, limit: int | None, judge
                 "expected_tools": sorted(turn.expect.get("tools", [])),
                 "guardrail": state.get("verdict"),
                 "fallback": state.get("fallback"),
+                # 폴백이 인프라 실패인지 에이전트 판단인지 가리려면 예외 문구가 남아야 한다.
+                "fallback_error": next(
+                    (n["fallback"] for n in state.get("trace", []) if n.get("fallback")), None
+                ),
                 "grade": result,
                 "reason": failure_reason(result),
             }
