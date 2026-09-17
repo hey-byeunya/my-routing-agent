@@ -466,6 +466,25 @@ def resolve_backend(requested: str | None = None) -> tuple[str, str]:
     raise BackendError(f"{wanted} 를 쓸 수 없고 replay 캐시도 없다 ({status[wanted]})")
 
 
+def _openai_chat():
+    """ChatOpenAI 에 function_calling 기본값을 씌운 클래스.
+
+    OpenAI 의 strict 구조화 출력은 자유형 dict 를 거부한다 — AnswerPlan.args 가
+    도구 인자를 그대로 담는 dict 라 400 이 난다 ("additionalProperties is required
+    to be supplied and to be false"). 스키마를 비틀면 도구 인자를 못 담으므로
+    호출 방식을 바꾼다. 호출부는 어느 백엔드인지 모르는 채로 돌아야 하니
+    여기서 흡수한다.
+    """
+    from langchain_openai import ChatOpenAI
+
+    class OpenAIChat(ChatOpenAI):
+        def with_structured_output(self, schema=None, **kwargs):
+            kwargs.setdefault("method", "function_calling")
+            return super().with_structured_output(schema, **kwargs)
+
+    return OpenAIChat
+
+
 def make_llm(backend: str | None = None, model: str | None = None, *, quiet: bool = False) -> BaseChatModel:
     """어느 백엔드든 같은 인터페이스로 돌려준다."""
     from src import llm_cache
@@ -478,13 +497,9 @@ def make_llm(backend: str | None = None, model: str | None = None, *, quiet: boo
     model = model or os.environ.get("AGENT_MODEL") or DEFAULT_MODELS[name]
 
     if name == "openai":
-        from langchain_openai import ChatOpenAI
-
-        return ChatOpenAI(model=model, temperature=0, timeout=60, max_retries=1)
+        return _openai_chat()(model=model, temperature=0, timeout=60, max_retries=1)
     if name == "ollama":
-        from langchain_openai import ChatOpenAI
-
-        return ChatOpenAI(
+        return _openai_chat()(
             model=model,
             base_url=os.environ.get("OLLAMA_BASE_URL", "http://localhost:11434/v1"),
             api_key="ollama",

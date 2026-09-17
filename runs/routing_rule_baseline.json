@@ -1,0 +1,368 @@
+{
+  "task": "routing",
+  "metrics": {
+    "n": 36,
+    "errors": 0,
+    "accuracy": 0.6944444444444444,
+    "elapsed_s": 0.0,
+    "macro_f1": 0.6989898989898989,
+    "report": "                 precision    recall  f1-score   support\n\nRESERVE_GENERAL       0.43      1.00      0.60         6\n   VISIT_PICKUP       0.80      0.67      0.73         6\n     CVS_PICKUP       1.00      1.00      1.00         6\n       BIZ_BULK       0.50      0.33      0.40         6\n  SPEC_SHIPPING       1.00      0.50      0.67         6\n          OTHER       1.00      0.67      0.80         6\n\n       accuracy                           0.69        36\n      macro avg       0.79      0.69      0.70        36\n   weighted avg       0.79      0.69      0.70        36\n",
+    "confusion": {
+      "labels": [
+        "RESERVE_GENERAL",
+        "VISIT_PICKUP",
+        "CVS_PICKUP",
+        "BIZ_BULK",
+        "SPEC_SHIPPING",
+        "OTHER"
+      ],
+      "matrix": [
+        [
+          6,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          1,
+          4,
+          0,
+          1,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          6,
+          0,
+          0,
+          0
+        ],
+        [
+          3,
+          1,
+          0,
+          2,
+          0,
+          0
+        ],
+        [
+          3,
+          0,
+          0,
+          0,
+          3,
+          0
+        ],
+        [
+          1,
+          0,
+          0,
+          1,
+          0,
+          4
+        ]
+      ]
+    }
+  },
+  "results": [
+    {
+      "qa_id": "400002",
+      "question": "회원가입 안 해도 택배 예약할 수 있나요?",
+      "gold": "RESERVE_GENERAL",
+      "pred": "RESERVE_GENERAL",
+      "confidence": 0.0,
+      "reason": "규칙 기반"
+    },
+    {
+      "qa_id": "400004",
+      "question": "가장 싸게 보내는 방법이 뭔가요?",
+      "gold": "RESERVE_GENERAL",
+      "pred": "RESERVE_GENERAL",
+      "confidence": 0.0,
+      "reason": "규칙 기반"
+    },
+    {
+      "qa_id": "400007",
+      "question": "택배요금이 대체 얼마인가요?",
+      "gold": "RESERVE_GENERAL",
+      "pred": "RESERVE_GENERAL",
+      "confidence": 0.0,
+      "reason": "규칙 기반"
+    },
+    {
+      "qa_id": "400010",
+      "question": "결제는 어떤 방식으로 하나요?",
+      "gold": "RESERVE_GENERAL",
+      "pred": "RESERVE_GENERAL",
+      "confidence": 0.0,
+      "reason": "규칙 기반"
+    },
+    {
+      "qa_id": "400012",
+      "question": "예약하고 나서 언제 확정되나요?",
+      "gold": "RESERVE_GENERAL",
+      "pred": "RESERVE_GENERAL",
+      "confidence": 0.0,
+      "reason": "규칙 기반"
+    },
+    {
+      "qa_id": "400015",
+      "question": "예약 화면에서 자꾸 오류가 나요.",
+      "gold": "RESERVE_GENERAL",
+      "pred": "RESERVE_GENERAL",
+      "confidence": 0.0,
+      "reason": "규칙 기반"
+    },
+    {
+      "qa_id": "400018",
+      "question": "박스 한 개만 있어도 방문해주시나요?",
+      "gold": "VISIT_PICKUP",
+      "pred": "VISIT_PICKUP",
+      "confidence": 0.0,
+      "reason": "규칙 기반"
+    },
+    {
+      "qa_id": "400019",
+      "question": "몇 시쯤 방문하는지 정확히 알 수 있나요?",
+      "gold": "VISIT_PICKUP",
+      "pred": "VISIT_PICKUP",
+      "confidence": 0.0,
+      "reason": "규칙 기반"
+    },
+    {
+      "qa_id": "400022",
+      "question": "집 앞에 두면 그냥 가져가시나요, 직접 받아야 하나요?",
+      "gold": "VISIT_PICKUP",
+      "pred": "RESERVE_GENERAL",
+      "confidence": 0.0,
+      "reason": "규칙 기반"
+    },
+    {
+      "qa_id": "400024",
+      "question": "방문 날짜를 다시 바꿀 수 있나요?",
+      "gold": "VISIT_PICKUP",
+      "pred": "VISIT_PICKUP",
+      "confidence": 0.0,
+      "reason": "규칙 기반"
+    },
+    {
+      "qa_id": "400026",
+      "question": "제주도인데 방문택배 가능한가요?",
+      "gold": "VISIT_PICKUP",
+      "pred": "VISIT_PICKUP",
+      "confidence": 0.0,
+      "reason": "규칙 기반"
+    },
+    {
+      "qa_id": "400028",
+      "question": "여러 박스도 방문택배로 한 번에 되나요?",
+      "gold": "VISIT_PICKUP",
+      "pred": "BIZ_BULK",
+      "confidence": 0.0,
+      "reason": "규칙 기반"
+    },
+    {
+      "qa_id": "400032",
+      "question": "예약 안 하고 그냥 편의점 가서 접수해도 되나요?",
+      "gold": "CVS_PICKUP",
+      "pred": "CVS_PICKUP",
+      "confidence": 0.0,
+      "reason": "규칙 기반"
+    },
+    {
+      "qa_id": "400033",
+      "question": "편의점에서 제 예약번호가 안 뜬대요.",
+      "gold": "CVS_PICKUP",
+      "pred": "CVS_PICKUP",
+      "confidence": 0.0,
+      "reason": "규칙 기반"
+    },
+    {
+      "qa_id": "400034",
+      "question": "방문택배랑 편의점택배 중에 뭐가 나을까요?",
+      "gold": "CVS_PICKUP",
+      "pred": "CVS_PICKUP",
+      "confidence": 0.0,
+      "reason": "규칙 기반"
+    },
+    {
+      "qa_id": "400037",
+      "question": "제주도에 사는데 편의점택배 되나요?",
+      "gold": "CVS_PICKUP",
+      "pred": "CVS_PICKUP",
+      "confidence": 0.0,
+      "reason": "규칙 기반"
+    },
+    {
+      "qa_id": "400038",
+      "question": "도서지역인데 편의점택배로 보낼 수 있나요?",
+      "gold": "CVS_PICKUP",
+      "pred": "CVS_PICKUP",
+      "confidence": 0.0,
+      "reason": "규칙 기반"
+    },
+    {
+      "qa_id": "400040",
+      "question": "편의점 가져가기 전에 뭘 준비해야 하나요?",
+      "gold": "CVS_PICKUP",
+      "pred": "CVS_PICKUP",
+      "confidence": 0.0,
+      "reason": "규칙 기반"
+    },
+    {
+      "qa_id": "400043",
+      "question": "최소 몇 박스부터 다량할인택배가 되나요?",
+      "gold": "BIZ_BULK",
+      "pred": "BIZ_BULK",
+      "confidence": 0.0,
+      "reason": "규칙 기반"
+    },
+    {
+      "qa_id": "400047",
+      "question": "받는 사람이 여러 명이면 어떻게 입력하나요?",
+      "gold": "BIZ_BULK",
+      "pred": "RESERVE_GENERAL",
+      "confidence": 0.0,
+      "reason": "규칙 기반"
+    },
+    {
+      "qa_id": "400052",
+      "question": "다량할인택배도 방문수거 해주나요?",
+      "gold": "BIZ_BULK",
+      "pred": "BIZ_BULK",
+      "confidence": 0.0,
+      "reason": "규칙 기반"
+    },
+    {
+      "qa_id": "400058",
+      "question": "집하주소는 꼭 등록해야 하나요?",
+      "gold": "BIZ_BULK",
+      "pred": "VISIT_PICKUP",
+      "confidence": 0.0,
+      "reason": "규칙 기반"
+    },
+    {
+      "qa_id": "400062",
+      "question": "발송량이 적어도 신청할 수 있나요?",
+      "gold": "BIZ_BULK",
+      "pred": "RESERVE_GENERAL",
+      "confidence": 0.0,
+      "reason": "규칙 기반"
+    },
+    {
+      "qa_id": "400068",
+      "question": "반품 접수도 여기서 관리되나요?",
+      "gold": "BIZ_BULK",
+      "pred": "RESERVE_GENERAL",
+      "confidence": 0.0,
+      "reason": "규칙 기반"
+    },
+    {
+      "qa_id": "400074",
+      "question": "운송장번호가 있는데 배송조회가 안 돼요.",
+      "gold": "SPEC_SHIPPING",
+      "pred": "SPEC_SHIPPING",
+      "confidence": 0.0,
+      "reason": "규칙 기반"
+    },
+    {
+      "qa_id": "400075",
+      "question": "예약번호랑 운송장번호랑 같은 건가요?",
+      "gold": "SPEC_SHIPPING",
+      "pred": "SPEC_SHIPPING",
+      "confidence": 0.0,
+      "reason": "규칙 기반"
+    },
+    {
+      "qa_id": "400076",
+      "question": "예약 취소하고 싶은데 가능한가요?",
+      "gold": "SPEC_SHIPPING",
+      "pred": "SPEC_SHIPPING",
+      "confidence": 0.0,
+      "reason": "규칙 기반"
+    },
+    {
+      "qa_id": "400078",
+      "question": "예약한 것보다 물건이 더 크면 어떻게 되나요?",
+      "gold": "SPEC_SHIPPING",
+      "pred": "RESERVE_GENERAL",
+      "confidence": 0.0,
+      "reason": "규칙 기반"
+    },
+    {
+      "qa_id": "400079",
+      "question": "현금도 택배로 보낼 수 있나요?",
+      "gold": "SPEC_SHIPPING",
+      "pred": "RESERVE_GENERAL",
+      "confidence": 0.0,
+      "reason": "규칙 기반"
+    },
+    {
+      "qa_id": "400080",
+      "question": "액체류도 보낼 수 있나요?",
+      "gold": "SPEC_SHIPPING",
+      "pred": "RESERVE_GENERAL",
+      "confidence": 0.0,
+      "reason": "규칙 기반"
+    },
+    {
+      "qa_id": "400085",
+      "question": "쿠팡에서 주문한 물건도 여기서 환불되나요?",
+      "gold": "OTHER",
+      "pred": "BIZ_BULK",
+      "confidence": 0.0,
+      "reason": "규칙 기반"
+    },
+    {
+      "qa_id": "400086",
+      "question": "입점 문의는 어디로 하면 되나요?",
+      "gold": "OTHER",
+      "pred": "OTHER",
+      "confidence": 0.0,
+      "reason": "규칙 기반"
+    },
+    {
+      "qa_id": "400087",
+      "question": "채용 공고는 어디서 확인하나요?",
+      "gold": "OTHER",
+      "pred": "OTHER",
+      "confidence": 0.0,
+      "reason": "규칙 기반"
+    },
+    {
+      "qa_id": "400088",
+      "question": "세금계산서 발행 부서 연락처 좀 알려주세요.",
+      "gold": "OTHER",
+      "pred": "OTHER",
+      "confidence": 0.0,
+      "reason": "규칙 기반"
+    },
+    {
+      "qa_id": "400089",
+      "question": "택배기사가 물건을 파손했는데 여기서 보상해주나요?",
+      "gold": "OTHER",
+      "pred": "OTHER",
+      "confidence": 0.0,
+      "reason": "규칙 기반"
+    },
+    {
+      "qa_id": "400090",
+      "question": "다른 사이트에서 예약한 것도 여기서 조회되나요?",
+      "gold": "OTHER",
+      "pred": "RESERVE_GENERAL",
+      "confidence": 0.0,
+      "reason": "규칙 기반"
+    }
+  ],
+  "config": {
+    "backend": "rule",
+    "model": null,
+    "threshold": 0.6,
+    "judge": null,
+    "note": "규칙 기준선 (LLM 없음)"
+  }
+}

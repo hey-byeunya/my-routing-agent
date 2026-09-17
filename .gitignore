@@ -2,6 +2,7 @@
 .venv/
 __pycache__/
 *.pyc
-runs/
+# 평가 원본(runs/*.json)은 REPORT 의 근거라 커밋한다. 캐시만 제외한다.
+runs/cache/
 .DS_Store
 .claude/
