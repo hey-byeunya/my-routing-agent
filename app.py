@@ -178,12 +178,17 @@ def draw_detail(turn: dict) -> None:
         st.json(state.get("trace", []))
 
 
-for past in turns:
-    with st.chat_message("user"):
-        st.write(past["question"])
-    with st.chat_message("assistant"):
-        st.write(past["answer"])
-        draw_detail(past)
+# 턴마다 고유한 key 를 준다. 안 주면 Streamlit 이 **자리로** 엘리먼트를 알아봐서,
+# 새 문의를 보낸 직후(답을 만드는 수십 초 동안) 그 자리에 있던 앞 턴의 캡션과
+# '이 답이 나온 경로' 가 새 질문 아래에 그대로 남아 보였다. 고객 발화 밑에 앞
+# 답변의 판정 정보가 붙는 셈이라 화면을 잘못 읽게 된다.
+for index, past in enumerate(turns):
+    with st.container(key=f"turn_{index}"):
+        with st.chat_message("user"):
+            st.write(past["question"])
+        with st.chat_message("assistant"):
+            st.write(past["answer"])
+            draw_detail(past)
 
 
 # ---------------------------------------------------------------- 입력과 실행
@@ -244,15 +249,17 @@ if question and st.session_state.get("customer_open"):
     question = None
 
 if question:
-    with st.chat_message("user"):
-        st.write(question)
-    with st.chat_message("assistant"):
-        turn = run_turn(question)
-        if turn is None:
-            st.stop()
-        turns = st.session_state["turns"]
-        st.write(turn["answer"])
-        draw_detail(turn)
+    # 돌고 있는 턴도 앞 턴들과 겹치지 않는 key 를 받는다 (위 주석 참조).
+    with st.container(key=f"turn_running_{len(turns)}"):
+        with st.chat_message("user"):
+            st.write(question)
+        with st.chat_message("assistant"):
+            turn = run_turn(question)
+            if turn is None:
+                st.stop()
+            turns = st.session_state["turns"]
+            st.write(turn["answer"])
+            draw_detail(turn)
 
 
 # ---------------------------------------------------------------- 입력줄
@@ -383,17 +390,19 @@ def customer_chat() -> None:
             st.chat_message("assistant").write(
                 "안녕하세요. 택배 예약·배송·취소와 관련해 궁금하신 점을 말씀해 주세요."
             )
-        for past in thread:
-            st.chat_message("user").write(past["question"])
-            st.chat_message("assistant").write(past["answer"])
+        for index, past in enumerate(thread):
+            with st.container(key=f"customer_turn_{index}"):
+                st.chat_message("user").write(past["question"])
+                st.chat_message("assistant").write(past["answer"])
 
         # 답을 만드는 동안에도 모달이 떠 있어야 한다. 본문에서 돌리면 그 사이
         # 모달이 그려지지 않아 화면이 닫힌 것처럼 보인다.
         waiting = st.session_state.pop("customer_pending", None)
         if waiting:
-            st.chat_message("user").write(waiting)
-            with st.chat_message("assistant"):
-                turn = run_turn(waiting, spinner="확인하고 있습니다…")
+            with st.container(key=f"customer_running_{len(thread)}"):
+                st.chat_message("user").write(waiting)
+                with st.chat_message("assistant"):
+                    turn = run_turn(waiting, spinner="확인하고 있습니다…")
             if turn is not None:
                 st.rerun()
 

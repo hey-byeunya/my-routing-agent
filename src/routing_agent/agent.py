@@ -391,6 +391,9 @@ def build_graph(
             # 고객이 직접 말한 수는 근거가 있는 수다. 예약번호를 되읽어 주는 것을
             # "지어낸 수치"로 잡으면 오탐이 된다.
             said=f"{state.get('question', '')}\n{_history_text(state.get('history'))}",
+            # 계획이 묻기로 한 것만 묻는다. 답변 단계가 스스로 지어낸 식별자 요구는
+            # 여기서 걸린다 — 예약도 안 한 고객에게 예약번호를 물으면 대화가 막힌다.
+            ask=state.get("ask", []),
         )
         if verdict["ok"]:
             log("6/6 검증", "통과")
@@ -405,9 +408,10 @@ def build_graph(
         bad = verdict["unsupported"]
         bad_claims = verdict.get("unsupported_claims") or []
         bad_durations = verdict.get("unsupported_durations") or []
+        bad_asks = verdict.get("unauthorized_asks") or []
         log("6/6 검증",
             f"근거 없는 수치 {bad} · 단정 {bad_claims} · 기간 {bad_durations}"
-            " — 답변을 내보내지 않는다")
+            f" · 계획에 없는 되물음 {bad_asks} — 답변을 내보내지 않는다")
 
         # 한 번은 그 수치를 빼고 다시 쓰게 해 본다. 근거는 그대로 주므로
         # 답할 수 있는 만큼은 답하게 된다.
@@ -421,6 +425,7 @@ def build_graph(
             question=state["question"],
             forbid_numbers=bad,
             forbid_claims=bad_claims + bad_durations,
+            forbid_asks=bad_asks,
         )
         try:
             retried = str(llm.invoke(retry_prompt).content).strip()
@@ -433,6 +438,7 @@ def build_graph(
                 tool_results=[m.content for m in state.get("messages", []) if isinstance(m, ToolMessage)],
                 context=state.get("context", ""),
                 said=f"{state.get('question', '')}\n{_history_text(state.get('history'))}",
+                ask=state.get("ask", []),
             )
             if recheck["ok"]:
                 log("6/6 검증", "재작성 통과")

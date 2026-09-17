@@ -38,7 +38,10 @@ def _numbers(text: str) -> list[int]:
 _CLAIM = re.compile(
     r"([가-힣A-Za-z0-9]{2,})(?:은|는|이|가)\s*[^.!?]{0,40}?"
     r"(가능합니다|불가합니다|불가능합니다|됩니다|안\s?됩니다|할\s?수\s?있습니다|할\s?수\s?없습니다"
-    r"|해당합니다|해당하므로|해당되므로|해당되어|금지되어|금지됩니다|제한됩니다)"
+    r"|해당합니다|해당하므로|해당되므로|해당되어|금지되어|금지됩니다|제한됩니다"
+    # 맺지 않고 이어지는 꼴도 단정이다. "향수는 일반적으로 발송할 수 있지만" 은
+    # 뒤에 단서를 붙였을 뿐 근거에 없는 가능 여부를 말한 것이다(화면, #42).
+    r"|할\s?수\s?있지만|할\s?수\s?없지만|가능하지만|가능하나|가능하며|불가하며)"
 )
 
 # 서술어·부사처럼 주어로 볼 수 없는 것들. 이 낱말이 주어 자리에 잡히면 흘린다.
@@ -116,7 +119,60 @@ def strip_forbidden_examples(text: str) -> str:
     return _FORBIDDEN_LINE.sub("", text or "")
 
 
-def check_guardrail(answer: str, tool_results: list[str], context: str = "", said: str = "") -> dict:
+# ---------------------------------------------------------------- 계획에 없는 되물음
+
+# 아직 예약하지 않은 고객에게 예약번호를 물으면 대화가 그 자리에서 막힌다. 고객은
+# 줄 수 없는 것을 요구받고, 우리는 답할 수 있는 것을 안 답한 셈이다. 실제로 화면에서
+# "향수 보내도 되나요" → (택배사까지 받은 뒤) "예약번호를 알려주시면 확인해서
+# 안내드리겠습니다" 가 나왔다.
+#
+# 프롬프트로 "없다고 한 것을 다시 묻지 마라" 고 적어 본 적이 있다(#36). 듣지 않아
+# 뺐다. 그래서 검사로 옮긴다 — **계획(plan)이 묻기로 한 것만 묻는다.** 계획이 ASK 로
+# 무엇을 되물을지 정했으면 그것은 통과하고, 답변 단계가 스스로 지어낸 식별자 요구는
+# 잡는다. 어느 쪽이 묻기로 했는지가 곧 기준이라 애매한 판단이 들어가지 않는다.
+_IDENTIFIER_PATTERNS = {
+    "예약번호": re.compile(r"예약\s?번호"),
+    "운송장번호": re.compile(r"운송장\s?번호|송장\s?번호"),
+    "주문번호": re.compile(r"주문\s?번호"),
+}
+
+# 식별자 뒤에 곧바로 붙는 요청 표현. 같은 문장 안에서만 본다 — "예약번호는 예약을
+# 마치면 발급됩니다" 처럼 **설명으로 언급하는 것**까지 잡으면 안내를 막게 된다.
+#
+# "확인해 주세요" 같은 **지시**는 요청이 아니다 — "수거 후 다시 확인해 주세요" 를
+# 식별자 요구로 세면 멀쩡한 안내가 막힌다. 실제로 그렇게 오탐이 났다(C-007#2).
+_ASK_TAIL = (
+    r"[^.!?\n]{0,30}?(알려\s?주|말씀해\s?주|말씀\s?부탁|입력해\s?주"
+    r"|주시겠|가\s?필요합니다|이\s?필요합니다)"
+)
+
+
+def unauthorized_asks(answer: str, ask: list[str] | None, said: str = "") -> list[str]:
+    """답변이 요구한 식별자 중 계획의 ask 목록에 없는 것.
+
+    `said` 는 고객이 직접 말한 것이다. 고객이 이미 준 번호를 두고 말하는 것은
+    요구가 아니므로 흘린다 — "운송장번호 123456789인데 조회가 안 돼요" 에 대한
+    답변에는 그 낱말이 당연히 다시 나온다.
+    """
+    planned = _norm_spaces(" ".join(ask or []))
+    given = _norm_spaces(said)
+    found = []
+    for name, pattern in _IDENTIFIER_PATTERNS.items():
+        if _norm_spaces(name) in planned:
+            continue  # 계획이 묻기로 한 것이다
+        if pattern.search(given):
+            continue  # 고객이 이미 말한 것이다
+        if re.search(pattern.pattern + _ASK_TAIL, answer or ""):
+            found.append(name)
+    return found
+
+
+def _norm_spaces(text: str) -> str:
+    return re.sub(r"\s+", "", text or "")
+
+
+def check_guardrail(answer: str, tool_results: list[str], context: str = "", said: str = "",
+                    ask: list[str] | None = None) -> dict:
     """근거에서 찾을 수 없는 큰 수를 골라낸다.
 
     `said` 는 고객이 직접 말한 것(이번 문의와 이전 대화)이다. 고객이 준
@@ -159,12 +215,15 @@ def check_guardrail(answer: str, tool_results: list[str], context: str = "", sai
     # 기간·기한은 금액이 아니라서 MIN_AMOUNT 문턱에 안 걸린다. 그런데 승인기간을
     # "2~3주" 대신 "1~2일" 로 말하면 고객은 그 말을 믿고 기다린다.
     durations = unsupported_durations(answer, context, tool_results, said)
+    # 계획이 묻기로 하지 않은 식별자를 답변이 요구하면 대화가 막힌다.
+    asks = unauthorized_asks(answer, ask, said)
 
     return {
-        "ok": not unsupported and not claims and not durations,
+        "ok": not unsupported and not claims and not durations and not asks,
         "unsupported": sorted(set(unsupported)),
         "unsupported_claims": claims,
         "unsupported_durations": durations,
+        "unauthorized_asks": asks,
         "checked_min": MIN_AMOUNT,
         "grounded_count": len(grounded),
     }

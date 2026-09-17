@@ -134,6 +134,24 @@ def main() -> int:
     check("고객 발화와 같은 것은 잡지 않는다",
           not is_repeat_answer("사과 되나요?", hist))
 
+    # ── 계획이 묻기로 하지 않은 것을 묻지 않는가
+    print("\n[계획에 없는 되물음]")
+    from routing_agent.guardrail import unauthorized_asks
+
+    invented = ("향수는 액체류로 접수가 제한될 수 있어 취급 기준 확인이 필요합니다. "
+                "예약번호를 알려주시면 확인해서 안내드리겠습니다.")
+    check("계획에 없는 예약번호 요구를 잡는다", unauthorized_asks(invented, []) == ["예약번호"])
+    check("계획이 묻기로 한 것은 통과", not unauthorized_asks(invented, ["예약번호"]))
+    check("띄어쓰기가 달라도 같은 것으로 본다",
+          not unauthorized_asks("운송장 번호를 말씀해 주시면 확인해 드리겠습니다.", ["운송장번호"]))
+    check("설명으로 언급하는 것은 잡지 않는다",
+          not unauthorized_asks("예약번호는 예약을 마치면 발급됩니다.", []))
+    check("고객이 이미 준 번호는 요구가 아니다",
+          not unauthorized_asks("운송장번호로 조회되지 않으면 수거 후 다시 확인해 주세요.", [],
+                                said="운송장번호 123456789인데 배송조회가 안 돼요."))
+    check("가드레일 판정에 반영된다",
+          not check_guardrail(invented, [], build_context("SPEC_SHIPPING"), ask=[])["ok"])
+
     # ── 할 수 없는 일을 약속하지 않는가 (§2 — 예약은 고객이 예약 화면에서 한다)
     print("\n[할 수 없는 일]")
     from routing_agent.prompts import ANSWER_RULES, PLAN_RULES
