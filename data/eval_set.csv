@@ -7,31 +7,37 @@ qa_id,question,route,route_original,source_split
 400015,예약 화면에서 자꾸 오류가 나요.,RESERVE_GENERAL,RESERVE_GENERAL,eval
 400018,박스 한 개만 있어도 방문해주시나요?,VISIT_PICKUP,VISIT_PICKUP,eval
 400019,몇 시쯤 방문하는지 정확히 알 수 있나요?,VISIT_PICKUP,VISIT_PICKUP,eval
-400022,"집 앞에 두면 그냥 가져가시나요, 직접 받아야 하나요?",VISIT_PICKUP,VISIT_PICKUP,eval
+400020,예약한 날짜인데 기사님이 안 오셨어요.,VISIT_PICKUP,VISIT_PICKUP,eval
+400023,회사 사무실로도 방문 가능한가요?,VISIT_PICKUP,VISIT_PICKUP,eval
 400024,방문 날짜를 다시 바꿀 수 있나요?,VISIT_PICKUP,VISIT_PICKUP,eval
-400026,제주도인데 방문택배 가능한가요?,VISIT_PICKUP,VISIT_PICKUP,eval
+400027,방문수거 예약했는데 계속 안 오면 어떻게 하나요?,VISIT_PICKUP,VISIT_PICKUP,eval
 400028,여러 박스도 방문택배로 한 번에 되나요?,VISIT_PICKUP,VISIT_PICKUP,eval
 400032,예약 안 하고 그냥 편의점 가서 접수해도 되나요?,CVS_PICKUP,CVS_PICKUP,eval
 400033,편의점에서 제 예약번호가 안 뜬대요.,CVS_PICKUP,CVS_PICKUP,eval
 400034,방문택배랑 편의점택배 중에 뭐가 나을까요?,CVS_PICKUP,CVS_PICKUP,eval
+400036,편의점택배 요금이 방문택배보다 싼가요?,CVS_PICKUP,CVS_PICKUP,eval
 400037,제주도에 사는데 편의점택배 되나요?,CVS_PICKUP,CVS_PICKUP,eval
 400038,도서지역인데 편의점택배로 보낼 수 있나요?,CVS_PICKUP,CVS_PICKUP,eval
 400040,편의점 가져가기 전에 뭘 준비해야 하나요?,CVS_PICKUP,CVS_PICKUP,eval
 400043,최소 몇 박스부터 다량할인택배가 되나요?,BIZ_BULK,BULK_DISCOUNT,eval
 400047,받는 사람이 여러 명이면 어떻게 입력하나요?,BIZ_BULK,BULK_DISCOUNT,eval
-400052,다량할인택배도 방문수거 해주나요?,BIZ_BULK,BULK_DISCOUNT,eval
-400058,집하주소는 꼭 등록해야 하나요?,BIZ_BULK,BIZ_ACCOUNT,eval
-400062,발송량이 적어도 신청할 수 있나요?,BIZ_BULK,BIZ_ACCOUNT,eval
+400051,제주도로 다량 발송하면 추가비용 있나요?,BIZ_BULK,BULK_DISCOUNT,eval
+400055,신청하면 바로 이용 가능한가요?,BIZ_BULK,BIZ_ACCOUNT,eval
+400059,신청 절차가 어떻게 되나요?,BIZ_BULK,BIZ_ACCOUNT,eval
+400064,스마트스토어 말고 다른 쇼핑몰도 연동되나요?,BIZ_BULK,ORDER_SYNC,eval
 400068,반품 접수도 여기서 관리되나요?,BIZ_BULK,ORDER_SYNC,eval
 400074,운송장번호가 있는데 배송조회가 안 돼요.,SPEC_SHIPPING,SPEC_SHIPPING,eval
 400075,예약번호랑 운송장번호랑 같은 건가요?,SPEC_SHIPPING,SPEC_SHIPPING,eval
 400076,예약 취소하고 싶은데 가능한가요?,SPEC_SHIPPING,SPEC_SHIPPING,eval
 400078,예약한 것보다 물건이 더 크면 어떻게 되나요?,SPEC_SHIPPING,SPEC_SHIPPING,eval
-400079,현금도 택배로 보낼 수 있나요?,SPEC_SHIPPING,SPEC_SHIPPING,eval
 400080,액체류도 보낼 수 있나요?,SPEC_SHIPPING,SPEC_SHIPPING,eval
+400082,수거는 됐는데 배송조회에 아직도 안 떠요.,SPEC_SHIPPING,SPEC_SHIPPING,eval
 400085,쿠팡에서 주문한 물건도 여기서 환불되나요?,OTHER,OTHER,outscope
 400086,입점 문의는 어디로 하면 되나요?,OTHER,OTHER,outscope
 400087,채용 공고는 어디서 확인하나요?,OTHER,OTHER,outscope
 400088,세금계산서 발행 부서 연락처 좀 알려주세요.,OTHER,OTHER,outscope
 400089,택배기사가 물건을 파손했는데 여기서 보상해주나요?,OTHER,OTHER,outscope
 400090,다른 사이트에서 예약한 것도 여기서 조회되나요?,OTHER,OTHER,outscope
+490001,예약 어디서 해요?,RESERVE_GENERAL,RESERVE_GENERAL,eval
+490003,예약한 내역을 확인할 수가 없어요.,SPEC_SHIPPING,SPEC_SHIPPING,eval
+490005,세금계산서는 어디서 발급받나요?,OTHER,OTHER,outscope
