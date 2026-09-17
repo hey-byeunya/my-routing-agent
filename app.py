@@ -241,32 +241,44 @@ st.markdown(
         background: var(--background-color);
         padding: 0.35rem 0 0.15rem 0;
       }
-      /* 새 대화 버튼을 입력칸의 전송 버튼과 같은 모양·같은 줄에 둔다.
-         값은 stChatInputSubmitButton 에서 그대로 읽어 온 것이다 (32x32, 반경 8px).
+      /* 새 대화 버튼을 입력칸의 전송 버튼과 같은 무늬로 둔다. 값은
+         stChatInputSubmitButton 에서 그대로 읽어 온 것이다 — 32x32, 반경 8px,
+         활성일 때 기본색 배경에 흰 글리프, 비활성일 때 옅은 회색.
          margin-bottom 은 입력칸 안쪽 여백만큼으로, 두 버튼의 아랫변을 맞춘다. */
       .st-key-composer .stButton button {
-        width: 32px; height: 32px; min-height: 32px;
+        /* 칸이 좁으면 버튼이 눌려 찌그러진다. 폭을 고정한다. */
+        width: 32px; min-width: 32px; flex: none;
+        height: 32px; min-height: 32px;
         padding: 6px; border: none; border-radius: 8px;
+        margin-bottom: 13px;
+        background: var(--primary-color, rgb(255, 75, 75));
+        color: rgb(255, 255, 255);
+      }
+      .st-key-composer .stButton button:disabled {
         background: rgba(151, 166, 195, 0.15);
         color: rgba(49, 51, 63, 0.4);
-        margin-bottom: 13px;
       }
       .st-key-composer .stButton button:hover:not(:disabled) {
-        background: rgba(151, 166, 195, 0.3);
-        color: inherit;
+        filter: brightness(0.93);
+        color: rgb(255, 255, 255);
       }
-      .st-key-composer .stButton button p { font-size: 15px; line-height: 1; margin: 0; }
+      /* 글리프 크기도 전송 버튼과 같게 (20px). 머티리얼 아이콘은 글자로 그려지므로
+         버튼 안의 모든 텍스트 요소에 걸어 준다. */
+      .st-key-composer .stButton button p,
+      .st-key-composer .stButton button span {
+        font-size: 20px; line-height: 1; margin: 0;
+      }
     </style>
     """,
     unsafe_allow_html=True,
 )
 
 with st.container(key="composer"):
-    box, reset = st.columns([18, 1], vertical_alignment="bottom")
+    box, reset = st.columns([16, 1], vertical_alignment="bottom")
     with box:
         typed = st.chat_input("문의를 입력하세요 — 이어서 물으면 앞 대화가 이력으로 들어간다")
     with reset:
-        if st.button("🔄", help="새 대화 시작 (지금까지의 대화를 비운다)",
+        if st.button(":material/refresh:", help="새 대화 시작 (지금까지의 대화를 비운다)",
                      use_container_width=True, disabled=not turns):
             st.session_state["turns"] = []
             st.session_state.pop("pending", None)
