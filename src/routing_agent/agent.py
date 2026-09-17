@@ -65,6 +65,18 @@ def _history_text(history: list[tuple] | None) -> str:
     return "\n".join(f"{who.get(item[0], item[0])}: {item[1]}" for item in history if item[1])
 
 
+def asked_before(history: list[tuple] | None, route: str | None) -> bool:
+    """이 사안으로 이미 상담원이 되물은 적이 있는가.
+
+    이력 항목에 카테고리가 없으면(옛 형식) 판단하지 않는다 — 모르는 채로
+    "이미 물어봤다"고 보면 첫 문의를 이관해 버린다.
+    """
+    if not history or not route:
+        return False
+    return any(len(item) >= 3 and item[0] == "agent" and item[2] == route and item[1]
+               for item in history)
+
+
 def conversation_progress(history: list[tuple] | None, route: str | None = None) -> str:
     """**같은 사안을** 몇 번째 묻고 있는지. 대화가 길다는 것과는 다르다.
 
@@ -165,17 +177,23 @@ def build_graph(
         }
 
     def gate(state: AgentState) -> Literal["plan", "escalate"]:
-        """확신이 없으면 넘긴다. 단 OTHER 는 예외다.
+        """확신이 없으면 넘긴다 — 단, **되물어서 풀릴 일이면 먼저 되묻는다.**
 
-        정책 §10.2 의 이관 조건에 "분류 확신도가 낮음"은 없다. 그리고 §10.1 은
-        응대 범위 밖 문의를 담당자에게 넘기라고 하지 않고 **해당 채널을 안내하고
-        끝내라**고 한다. OTHER 는 확신이 낮아서 고른 칸이 아니라 "여기서 답할 수
-        없다"는 판정 자체이므로, 낮은 확신도를 이유로 사람에게 넘기면 범위 밖
-        문의가 그대로 2차 상담에 쌓인다.
+        확신도가 낮은 데에는 두 가지가 섞여 있다. 고객이 아직 정보를 덜 준 것과,
+        줄 만큼 줬는데도 우리가 못 푸는 것. 앞의 것은 사람에게 넘길 일이 아니다 —
+        "얼마에요?" 한 마디에 담당자를 부르면 고객은 되물음 한 번이면 끝날 일에
+        상담원을 기다린다. 정책 §10.2 의 이관 조건에도 "분류 확신도가 낮음"은 없고,
+        §2·PLAN_RULES 는 첫 문의에 바로 이관하지 말라고 한다.
+
+        그래서 **같은 사안을 이미 되물었는데도 확신이 서지 않을 때만** 넘긴다.
+        한 번도 안 물어봤으면 계획 단계로 보내 되묻게 한다. OTHER 도 넘기지
+        않는다 — 범위 밖은 이관이 아니라 채널 안내로 끝낸다(§10.1).
         """
         if state.get("route") == "OTHER":
             return "plan"
-        return "plan" if state.get("confidence", 0.0) >= threshold else "escalate"
+        if state.get("confidence", 0.0) >= threshold:
+            return "plan"
+        return "escalate" if asked_before(state.get("history"), state.get("route")) else "plan"
 
     # ------------------------------------------------------------ 3/6 계획
     def plan(state: AgentState) -> dict:

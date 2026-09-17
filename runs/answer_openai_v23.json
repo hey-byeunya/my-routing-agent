@@ -1,0 +1,1066 @@
+{
+  "task": "answer",
+  "metrics": {
+    "n": 29,
+    "tool_score": 1.0,
+    "answer_score": 0.896551724137931,
+    "action_score": 0.7241379310344828,
+    "both": 0.896551724137931,
+    "elapsed_s": 0.1,
+    "route_accuracy": 0.7931034482758621,
+    "guardrail_violations": 0,
+    "fallbacks": 0
+  },
+  "results": [
+    {
+      "item_id": "C-001#2",
+      "question": "택배비가 얼마인가요?",
+      "route_gold": "VISIT_PICKUP",
+      "route_pred": "RESERVE_GENERAL",
+      "confidence": 0.7,
+      "action_gold": "ASK",
+      "action_pred": "ASK",
+      "answer": "정확한 운임을 확인해 드리겠습니다. 어떤 서비스(방문택배, 편의점택배, 다량할인택배)를 이용하시나요? 택배사와 박스 크기 및 중량은 어떻게 되나요?",
+      "reference": "이용하실 서비스와 택배사, 박스 크기·중량을 알려주시면 정확한 운임을 확인해 드리겠습니다.",
+      "called_tools": [],
+      "expected_tools": [],
+      "guardrail": {
+        "ok": true,
+        "unsupported": [],
+        "checked_min": 1000,
+        "grounded_count": 12
+      },
+      "fallback": null,
+      "fallback_error": null,
+      "grade": {
+        "tools_ok": true,
+        "answer_ok": true,
+        "action_ok": true,
+        "expected_tools": [],
+        "actual_tools": [],
+        "missing": [],
+        "violated": [],
+        "unasked": [],
+        "judged_by_llm": []
+      },
+      "reason": "통과"
+    },
+    {
+      "item_id": "C-001#4",
+      "question": "롯데택배로 방문택배 보낼 건데 2kg에 60cm 이하예요.",
+      "route_gold": "VISIT_PICKUP",
+      "route_pred": "VISIT_PICKUP",
+      "confidence": 0.8,
+      "action_gold": "ANSWER",
+      "action_pred": "ANSWER",
+      "answer": "롯데택배로 2kg/60cm 이하의 방문택배를 이용하실 경우 기본 운임은 3,800원입니다. 다만, 확정 금액은 예약 화면에서 확인해야 하니 참고 부탁드립니다. 추가로 궁금하신 사항이 있으신가요?",
+      "reference": "롯데택배 방문택배 기준 2kg·60cm 이하 구간은 3,800원입니다. 제주는 3,000원, 도서지역은 5,000원의 추가운임이 붙습니다.",
+      "called_tools": [
+        "get_visit_rate"
+      ],
+      "expected_tools": [
+        "get_visit_rate"
+      ],
+      "guardrail": {
+        "ok": true,
+        "unsupported": [],
+        "checked_min": 1000,
+        "grounded_count": 28
+      },
+      "fallback": null,
+      "fallback_error": null,
+      "grade": {
+        "tools_ok": true,
+        "answer_ok": true,
+        "action_ok": true,
+        "expected_tools": [
+          "get_visit_rate"
+        ],
+        "actual_tools": [
+          "get_visit_rate"
+        ],
+        "missing": [],
+        "violated": [],
+        "unasked": [],
+        "judged_by_llm": []
+      },
+      "reason": "통과"
+    },
+    {
+      "item_id": "C-003#2",
+      "question": "짐이 무거운데 편의점까지 들고 가기 힘들어요. 뭐가 나을까요?",
+      "route_gold": "CVS_PICKUP",
+      "route_pred": "VISIT_PICKUP",
+      "confidence": 0.6,
+      "action_gold": "ANSWER",
+      "action_pred": "ANSWER",
+      "answer": "방문택배를 이용하시는 것이 좋습니다. 기사님이 직접 방문하여 수거해 드리므로, 물품을 들고 가실 필요가 없습니다. 물품의 크기와 중량을 알려주시면 최종 운임을 확인해 드리겠습니다.",
+      "reference": "직접 운반이 어려우시면 기사님이 방문해 수거해 가는 방문택배를 추천드립니다.",
+      "called_tools": [],
+      "expected_tools": [],
+      "guardrail": {
+        "ok": true,
+        "unsupported": [],
+        "checked_min": 1000,
+        "grounded_count": 28
+      },
+      "fallback": null,
+      "fallback_error": null,
+      "grade": {
+        "tools_ok": true,
+        "answer_ok": true,
+        "action_ok": true,
+        "expected_tools": [],
+        "actual_tools": [],
+        "missing": [],
+        "violated": [],
+        "unasked": [],
+        "judged_by_llm": []
+      },
+      "reason": "통과"
+    },
+    {
+      "item_id": "C-005#2",
+      "question": "사업자택배 운임이 정확히 얼마인지 알려주세요.",
+      "route_gold": "BIZ_BULK",
+      "route_pred": "RESERVE_GENERAL",
+      "confidence": 0.6,
+      "action_gold": "ANSWER",
+      "action_pred": "OUT_OF_SCOPE",
+      "answer": "정확한 사업자택배 운임을 확인해 드리겠습니다. 잠시만 기다려 주세요.",
+      "reference": "사업자택배 운임은 전월 발송량에 따라 구간이 달라집니다. 정확한 구간과 금액은 신청·이용 화면에서 확인해 안내드리겠습니다.",
+      "called_tools": [],
+      "expected_tools": [],
+      "guardrail": {
+        "ok": true,
+        "unsupported": [],
+        "checked_min": 1000,
+        "grounded_count": 12
+      },
+      "fallback": null,
+      "fallback_error": null,
+      "grade": {
+        "tools_ok": true,
+        "answer_ok": false,
+        "action_ok": false,
+        "expected_tools": [],
+        "actual_tools": [],
+        "missing": [
+          "발송량"
+        ],
+        "violated": [],
+        "unasked": [],
+        "judged_by_llm": []
+      },
+      "reason": "필수_사실_누락"
+    },
+    {
+      "item_id": "C-006#2",
+      "question": "어제 방문 예약했는데 기사님이 안 오셨어요. 예약번호는 R-88213이에요.",
+      "route_gold": "VISIT_PICKUP",
+      "route_pred": "VISIT_PICKUP",
+      "confidence": 0.8,
+      "action_gold": "ANSWER",
+      "action_pred": "ANSWER",
+      "answer": "어제 집하가 지연되어 오늘 재방문 예정으로 등록되어 있습니다. 방문 전 문자 안내가 발송될 예정입니다. 추가로 궁금하신 점이 있으신가요?",
+      "reference": "확인해 보니 어제 집하가 지연되어 오늘 재방문 예정으로 등록되어 있습니다. 오늘 안으로 다시 방문 예정이며, 그래도 안 되면 다시 연락 주세요.",
+      "called_tools": [
+        "get_reservation_status"
+      ],
+      "expected_tools": [
+        "get_reservation_status"
+      ],
+      "guardrail": {
+        "ok": true,
+        "unsupported": [],
+        "checked_min": 1000,
+        "grounded_count": 29
+      },
+      "fallback": null,
+      "fallback_error": null,
+      "grade": {
+        "tools_ok": true,
+        "answer_ok": true,
+        "action_ok": true,
+        "expected_tools": [
+          "get_reservation_status"
+        ],
+        "actual_tools": [
+          "get_reservation_status"
+        ],
+        "missing": [],
+        "violated": [],
+        "unasked": [],
+        "judged_by_llm": []
+      },
+      "reason": "통과"
+    },
+    {
+      "item_id": "C-007#2",
+      "question": "운송장번호 123456789인데 배송조회가 안 돼요.",
+      "route_gold": "SPEC_SHIPPING",
+      "route_pred": "SPEC_SHIPPING",
+      "confidence": 0.9,
+      "action_gold": "ANSWER",
+      "action_pred": "ANSWER",
+      "answer": "운송장번호 123456789의 상태를 확인해 보니, 운송장은 발급됐으나 택배사가 아직 수거하지 않은 상태입니다. 수거가 완료된 후에야 배송조회가 가능하니, 수거가 진행될 때까지 기다려 주시기 바랍니다. 추가로 궁금한 점이 있으시면 말씀해 주세요.",
+      "reference": "확인해 보니 아직 택배사가 수거하기 전 상태입니다. 수거 후 전산에 등록되면 조회가 가능하며, 그 이후에도 안 뜨면 다시 문의해 주세요.",
+      "called_tools": [
+        "get_tracking_status"
+      ],
+      "expected_tools": [
+        "get_tracking_status"
+      ],
+      "guardrail": {
+        "ok": true,
+        "unsupported": [],
+        "checked_min": 1000,
+        "grounded_count": 15
+      },
+      "fallback": null,
+      "fallback_error": null,
+      "grade": {
+        "tools_ok": true,
+        "answer_ok": true,
+        "action_ok": true,
+        "expected_tools": [
+          "get_tracking_status"
+        ],
+        "actual_tools": [
+          "get_tracking_status"
+        ],
+        "missing": [],
+        "violated": [],
+        "unasked": [],
+        "judged_by_llm": []
+      },
+      "reason": "통과"
+    },
+    {
+      "item_id": "C-009#2",
+      "question": "방금 예약한 거 취소하고 싶어요.",
+      "route_gold": "SPEC_SHIPPING",
+      "route_pred": "SPEC_SHIPPING",
+      "confidence": 0.8,
+      "action_gold": "ASK",
+      "action_pred": "CONFIRM",
+      "answer": "예약 상태를 확인한 뒤 취소 가능 여부를 안내해 드리겠습니다. 예약번호를 알려주시면 확인하겠습니다.",
+      "reference": "취소하실 예약번호를 알려주시겠어요?",
+      "called_tools": [],
+      "expected_tools": [],
+      "guardrail": {
+        "ok": true,
+        "unsupported": [],
+        "checked_min": 1000,
+        "grounded_count": 14
+      },
+      "fallback": null,
+      "fallback_error": null,
+      "grade": {
+        "tools_ok": true,
+        "answer_ok": true,
+        "action_ok": false,
+        "expected_tools": [],
+        "actual_tools": [],
+        "missing": [],
+        "violated": [],
+        "unasked": [],
+        "judged_by_llm": []
+      },
+      "reason": "통과"
+    },
+    {
+      "item_id": "C-009#4",
+      "question": "예약번호는 R-90410이에요.",
+      "route_gold": "SPEC_SHIPPING",
+      "route_pred": "SPEC_SHIPPING",
+      "confidence": 0.9,
+      "action_gold": "CONFIRM",
+      "action_pred": "CONFIRM",
+      "answer": "현재 예약 상태는 \"택배사 접수 전\"으로, 취소가 가능합니다. 고객님의 동의를 받은 뒤 진행해도 될까요?",
+      "reference": "아직 택배사 접수 전 상태라 취소가 가능합니다. 지금 취소 진행해 드려도 괜찮으실까요?",
+      "called_tools": [
+        "get_reservation_status"
+      ],
+      "expected_tools": [
+        "get_reservation_status"
+      ],
+      "guardrail": {
+        "ok": true,
+        "unsupported": [],
+        "checked_min": 1000,
+        "grounded_count": 15
+      },
+      "fallback": null,
+      "fallback_error": null,
+      "grade": {
+        "tools_ok": true,
+        "answer_ok": true,
+        "action_ok": true,
+        "expected_tools": [
+          "get_reservation_status"
+        ],
+        "actual_tools": [
+          "get_reservation_status"
+        ],
+        "missing": [],
+        "violated": [],
+        "unasked": [],
+        "judged_by_llm": []
+      },
+      "reason": "통과"
+    },
+    {
+      "item_id": "C-009#6",
+      "question": "네, 취소해주세요.",
+      "route_gold": "SPEC_SHIPPING",
+      "route_pred": "SPEC_SHIPPING",
+      "confidence": 0.9,
+      "action_gold": "ANSWER",
+      "action_pred": "CONFIRM",
+      "answer": "예약번호 R-90410에 대한 취소를 진행하겠습니다. 잠시만 기다려 주시기 바랍니다.",
+      "reference": "예약을 취소 처리해 드렸습니다. 다시 이용하실 때는 새로 예약해 주세요.",
+      "called_tools": [],
+      "expected_tools": [],
+      "guardrail": {
+        "ok": true,
+        "unsupported": [],
+        "checked_min": 1000,
+        "grounded_count": 15
+      },
+      "fallback": null,
+      "fallback_error": null,
+      "grade": {
+        "tools_ok": true,
+        "answer_ok": true,
+        "action_ok": false,
+        "expected_tools": [],
+        "actual_tools": [],
+        "missing": [],
+        "violated": [],
+        "unasked": [],
+        "judged_by_llm": []
+      },
+      "reason": "통과"
+    },
+    {
+      "item_id": "C-010#2",
+      "question": "향수인데 액체류도 택배로 보낼 수 있나요?",
+      "route_gold": "SPEC_SHIPPING",
+      "route_pred": "SPEC_SHIPPING",
+      "confidence": 0.8,
+      "action_gold": "ANSWER",
+      "action_pred": "ANSWER",
+      "answer": "액체류는 택배사 기준에 따라 제한될 수 있습니다. 선택하신 택배사의 취급 제한 기준을 확인해야 하므로, 택배사를 알려주시면 정확히 안내드리겠습니다.",
+      "reference": "액체류는 접수 자체가 금지된 품목은 아니지만 택배사 기준에 따라 제한 여부가 달라집니다. 이용하실 택배사를 확인해 안내드리겠습니다.",
+      "called_tools": [],
+      "expected_tools": [],
+      "guardrail": {
+        "ok": true,
+        "unsupported": [],
+        "checked_min": 1000,
+        "grounded_count": 14
+      },
+      "fallback": null,
+      "fallback_error": null,
+      "grade": {
+        "tools_ok": true,
+        "answer_ok": true,
+        "action_ok": true,
+        "expected_tools": [],
+        "actual_tools": [],
+        "missing": [],
+        "violated": [],
+        "unasked": [],
+        "judged_by_llm": []
+      },
+      "reason": "통과"
+    },
+    {
+      "item_id": "C-011#2",
+      "question": "스마트스토어 연동했는데 주문이 하나도 안 들어와요.",
+      "route_gold": "BIZ_BULK",
+      "route_pred": "BIZ_BULK",
+      "confidence": 0.7,
+      "action_gold": "ASK",
+      "action_pred": "ASK",
+      "answer": "주문이 수집되지 않는 경우는 여러 가지 원인이 있을 수 있습니다. 쇼핑몰 계정의 연동 상태, 주문 발생 시점, 주문 상태 등을 확인해야 합니다. 정확한 확인을 위해 쇼핑몰명, 주문번호, 주문 발생일시를 알려주시면 감사하겠습니다.",
+      "reference": "연동하신 시점과 확인하시려는 주문이 발생한 시각을 알려주시겠어요?",
+      "called_tools": [],
+      "expected_tools": [],
+      "guardrail": {
+        "ok": true,
+        "unsupported": [],
+        "checked_min": 1000,
+        "grounded_count": 12
+      },
+      "fallback": null,
+      "fallback_error": null,
+      "grade": {
+        "tools_ok": true,
+        "answer_ok": true,
+        "action_ok": true,
+        "expected_tools": [],
+        "actual_tools": [],
+        "missing": [],
+        "violated": [],
+        "unasked": [],
+        "judged_by_llm": []
+      },
+      "reason": "통과"
+    },
+    {
+      "item_id": "C-011#4",
+      "question": "어제 오후에 연동했고, 오늘 아침에 들어온 주문이 안 보여요.",
+      "route_gold": "BIZ_BULK",
+      "route_pred": "BIZ_BULK",
+      "confidence": 0.7,
+      "action_gold": "ANSWER",
+      "action_pred": "ASK",
+      "answer": "연동 이후 주문만 수집 가능하므로, 어제 오후에 연동하신 경우 오늘 아침에 발생한 주문은 수집되지 않을 수 있습니다. 확인을 위해 쇼핑몰명과 주문번호를 알려주시겠어요?",
+      "reference": "연동 시점 이후 발생한 결제완료 주문만 수집됩니다. 오늘 아침 주문이 맞다면 주문 불러오기를 다시 실행해 보시고, 그래도 안 보이면 쇼핑몰명과 주문번호를 알려주세요.",
+      "called_tools": [],
+      "expected_tools": [],
+      "guardrail": {
+        "ok": true,
+        "unsupported": [],
+        "checked_min": 1000,
+        "grounded_count": 12
+      },
+      "fallback": null,
+      "fallback_error": null,
+      "grade": {
+        "tools_ok": true,
+        "answer_ok": true,
+        "action_ok": false,
+        "expected_tools": [],
+        "actual_tools": [],
+        "missing": [],
+        "violated": [],
+        "unasked": [],
+        "judged_by_llm": []
+      },
+      "reason": "통과"
+    },
+    {
+      "item_id": "C-011#6",
+      "question": "다시 해봐도 그대로예요. 이거 벌써 두 번째로 문의하는 거예요.",
+      "route_gold": "BIZ_BULK",
+      "route_pred": "BIZ_BULK",
+      "confidence": 0.7,
+      "action_gold": "ESCALATE",
+      "action_pred": "ESCALATE",
+      "answer": "죄송합니다. 고객님의 문의를 담당자에게 연결하였습니다. 추가적인 기술 지원이 필요하니, 곧 담당자가 연락드릴 것입니다.",
+      "reference": "반복해서 불편을 드려 죄송합니다. 정확한 원인 확인을 위해 담당자에게 연결해 드리겠습니다.",
+      "called_tools": [
+        "escalate_to_agent"
+      ],
+      "expected_tools": [
+        "escalate_to_agent"
+      ],
+      "guardrail": {
+        "ok": true,
+        "unsupported": [],
+        "checked_min": 1000,
+        "grounded_count": 12
+      },
+      "fallback": null,
+      "fallback_error": null,
+      "grade": {
+        "tools_ok": true,
+        "answer_ok": true,
+        "action_ok": true,
+        "expected_tools": [
+          "escalate_to_agent"
+        ],
+        "actual_tools": [
+          "escalate_to_agent"
+        ],
+        "missing": [],
+        "violated": [],
+        "unasked": [],
+        "judged_by_llm": []
+      },
+      "reason": "통과"
+    },
+    {
+      "item_id": "C-012#2",
+      "question": "편의점에서 제 예약번호가 계속 조회가 안 된다고 해요. 예약번호는 R-77120이에요.",
+      "route_gold": "CVS_PICKUP",
+      "route_pred": "SPEC_SHIPPING",
+      "confidence": 0.8,
+      "action_gold": "ANSWER",
+      "action_pred": "ANSWER",
+      "answer": "예약현황을 확인해 보니 현재 상태는 \"접수대기\"입니다. GS편의점택배로 예약되어 있으므로, 예약한 브랜드(GS) 매장에서 접수해야 예약번호가 조회됩니다. 예약 취소는 가능하니, 필요하시면 말씀해 주세요.",
+      "reference": "확인해 보니 예약이 GS편의점택배로 되어 있어 CU 매장에서는 조회되지 않습니다. GS 매장에서 접수해 주시면 정상적으로 조회됩니다.",
+      "called_tools": [
+        "get_reservation_status"
+      ],
+      "expected_tools": [
+        "get_reservation_status"
+      ],
+      "guardrail": {
+        "ok": true,
+        "unsupported": [],
+        "checked_min": 1000,
+        "grounded_count": 15
+      },
+      "fallback": null,
+      "fallback_error": null,
+      "grade": {
+        "tools_ok": true,
+        "answer_ok": true,
+        "action_ok": true,
+        "expected_tools": [
+          "get_reservation_status"
+        ],
+        "actual_tools": [
+          "get_reservation_status"
+        ],
+        "missing": [],
+        "violated": [],
+        "unasked": [],
+        "judged_by_llm": []
+      },
+      "reason": "통과"
+    },
+    {
+      "item_id": "C-012#4",
+      "question": "아까도 GS 매장 갔는데 안 됐어요. 이번이 세 번째예요.",
+      "route_gold": "CVS_PICKUP",
+      "route_pred": "CVS_PICKUP",
+      "confidence": 0.7,
+      "action_gold": "ESCALATE",
+      "action_pred": "ESCALATE",
+      "answer": "고객님, 불편을 드려 죄송합니다. 고객님의 문제를 해결하기 위해 담당자에게 연결해 드리겠습니다. 잠시만 기다려 주시기 바랍니다.",
+      "reference": "같은 문제로 계속 불편을 드려 죄송합니다. 정확한 확인을 위해 담당자에게 바로 연결해 드리겠습니다.",
+      "called_tools": [
+        "escalate_to_agent"
+      ],
+      "expected_tools": [
+        "escalate_to_agent"
+      ],
+      "guardrail": {
+        "ok": true,
+        "unsupported": [],
+        "checked_min": 1000,
+        "grounded_count": 17
+      },
+      "fallback": null,
+      "fallback_error": null,
+      "grade": {
+        "tools_ok": true,
+        "answer_ok": true,
+        "action_ok": true,
+        "expected_tools": [
+          "escalate_to_agent"
+        ],
+        "actual_tools": [
+          "escalate_to_agent"
+        ],
+        "missing": [],
+        "violated": [],
+        "unasked": [],
+        "judged_by_llm": []
+      },
+      "reason": "통과"
+    },
+    {
+      "item_id": "C-013#2",
+      "question": "매장이 어디 있나요? 직접 가서 물어보고 싶어요.",
+      "route_gold": "OTHER",
+      "route_pred": "OTHER",
+      "confidence": 0.1,
+      "action_gold": "OUT_OF_SCOPE",
+      "action_pred": "OUT_OF_SCOPE",
+      "answer": "해당 문의는 저희가 도와드리기 어려운 부분입니다. 이 서비스는 온라인 전용이며 오프라인 매장이 없음을 안내드립니다. 관련 부서 또는 채널로 문의해 주셔야 확인이 가능합니다.",
+      "reference": "이 서비스는 온라인 전용으로 운영되어 오프라인 매장이 없습니다. 문의사항은 채팅 상담이나 1:1 문의로 도와드리겠습니다.",
+      "called_tools": [],
+      "expected_tools": [],
+      "guardrail": {
+        "ok": true,
+        "unsupported": [],
+        "checked_min": 1000,
+        "grounded_count": 7
+      },
+      "fallback": null,
+      "fallback_error": null,
+      "grade": {
+        "tools_ok": true,
+        "answer_ok": true,
+        "action_ok": true,
+        "expected_tools": [],
+        "actual_tools": [],
+        "missing": [],
+        "violated": [],
+        "unasked": [],
+        "judged_by_llm": []
+      },
+      "reason": "통과"
+    },
+    {
+      "item_id": "C-014#2",
+      "question": "택배기사가 물건을 파손했는데 여기서 보상해주나요?",
+      "route_gold": "OTHER",
+      "route_pred": "OTHER",
+      "confidence": 0.1,
+      "action_gold": "OUT_OF_SCOPE",
+      "action_pred": "OUT_OF_SCOPE",
+      "answer": "해당 문의는 저희가 도와드리기 어려운 부분입니다. 택배사에 문의해 주셔야 확인이 가능합니다.",
+      "reference": "택배 파손은 발송에 이용하신 택배사 확인이 우선 필요한 사항입니다. 택배사 고객센터로 문의해 주시고, 필요한 부분은 저희도 함께 확인해 드리겠습니다.",
+      "called_tools": [],
+      "expected_tools": [],
+      "guardrail": {
+        "ok": true,
+        "unsupported": [],
+        "checked_min": 1000,
+        "grounded_count": 7
+      },
+      "fallback": null,
+      "fallback_error": null,
+      "grade": {
+        "tools_ok": true,
+        "answer_ok": true,
+        "action_ok": true,
+        "expected_tools": [],
+        "actual_tools": [],
+        "missing": [],
+        "violated": [],
+        "unasked": [],
+        "judged_by_llm": []
+      },
+      "reason": "통과"
+    },
+    {
+      "item_id": "N-001#2",
+      "question": "택배 보내려는데 어디가 제일 싼가요?",
+      "route_gold": "RESERVE_GENERAL",
+      "route_pred": "RESERVE_GENERAL",
+      "confidence": 0.7,
+      "action_gold": "ASK",
+      "action_pred": "ASK",
+      "answer": "택배사별 운임은 건별로 다르기 때문에 정확한 최저가는 확인이 필요합니다. 보내실 물품의 크기와 중량, 그리고 선호하는 택배사가 있으신지 알려주시면 보다 정확한 안내를 드리겠습니다.",
+      "reference": "이용하실 서비스와 박스 크기·중량을 알려주시면 택배사별 운임을 비교해 안내드리겠습니다.",
+      "called_tools": [],
+      "expected_tools": [],
+      "guardrail": {
+        "ok": true,
+        "unsupported": [],
+        "checked_min": 1000,
+        "grounded_count": 12
+      },
+      "fallback": null,
+      "fallback_error": null,
+      "grade": {
+        "tools_ok": true,
+        "answer_ok": false,
+        "action_ok": true,
+        "expected_tools": [],
+        "actual_tools": [],
+        "missing": [],
+        "violated": [],
+        "unasked": [
+          "이용하실 서비스(방문택배/편의점택배/다량할인택배)"
+        ],
+        "judged_by_llm": []
+      },
+      "reason": "되물음_누락"
+    },
+    {
+      "item_id": "N-001#4",
+      "question": "집으로 기사님이 와서 가져가면 좋겠어요. 2kg에 세 변 합 60cm 정도예요.",
+      "route_gold": "RESERVE_GENERAL",
+      "route_pred": "VISIT_PICKUP",
+      "confidence": 0.8,
+      "action_gold": "ANSWER",
+      "action_pred": "ANSWER",
+      "answer": "방문택배를 이용하시면 기사님이 집으로 와서 수거해 드립니다. 2kg/60cm 이하의 경우, 롯데택배는 3,800원, 한진택배는 3,900원, CJ대한통운은 4,300원, 우체국택배는 5,000원의 기본 운임이 적용됩니다. 최종 운임은 예약 화면에서 확인해야 하니, 예약 진행 시 참고하시기 바랍니다.",
+      "reference": "방문택배 2kg·세 변 합 60cm 기준으로는 롯데택배가 3,800원으로 가장 저렴하고 한진택배가 3,900원입니다. 제주·도서지역은 추가운임이 붙으며, 확정 금액은 예약 화면에서 확인해 주세요.",
+      "called_tools": [
+        "get_visit_rate",
+        "get_visit_rate",
+        "get_visit_rate",
+        "get_visit_rate"
+      ],
+      "expected_tools": [
+        "get_visit_rate"
+      ],
+      "guardrail": {
+        "ok": true,
+        "unsupported": [],
+        "checked_min": 1000,
+        "grounded_count": 28
+      },
+      "fallback": null,
+      "fallback_error": null,
+      "grade": {
+        "tools_ok": true,
+        "answer_ok": true,
+        "action_ok": true,
+        "expected_tools": [
+          "get_visit_rate"
+        ],
+        "actual_tools": [
+          "get_visit_rate"
+        ],
+        "missing": [],
+        "violated": [],
+        "unasked": [],
+        "judged_by_llm": []
+      },
+      "reason": "통과"
+    },
+    {
+      "item_id": "N-002#2",
+      "question": "개인도 쓸 수 있나요? 사업자만 되는 건가요?",
+      "route_gold": "RESERVE_GENERAL",
+      "route_pred": "BIZ_BULK",
+      "confidence": 0.6,
+      "action_gold": "ANSWER",
+      "action_pred": "OUT_OF_SCOPE",
+      "answer": "소호사업자택배는 개인사업자와 법인사업자 모두 신청할 수 있습니다. 개인 고객님도 이용 가능하니, 자세한 신청 절차를 안내해 드릴까요?",
+      "reference": "개인 회원도 방문택배·편의점택배·다량할인택배를 모두 이용하실 수 있습니다. 사업자 인증이 필요한 서비스는 소호사업자택배뿐입니다.",
+      "called_tools": [],
+      "expected_tools": [],
+      "guardrail": {
+        "ok": true,
+        "unsupported": [],
+        "checked_min": 1000,
+        "grounded_count": 12
+      },
+      "fallback": null,
+      "fallback_error": null,
+      "grade": {
+        "tools_ok": true,
+        "answer_ok": true,
+        "action_ok": false,
+        "expected_tools": [],
+        "actual_tools": [],
+        "missing": [],
+        "violated": [],
+        "unasked": [],
+        "judged_by_llm": []
+      },
+      "reason": "통과"
+    },
+    {
+      "item_id": "N-003#2",
+      "question": "편의점택배로 제주도에 보낼 수 있나요?",
+      "route_gold": "CVS_PICKUP",
+      "route_pred": "CVS_PICKUP",
+      "confidence": 0.7,
+      "action_gold": "ASK",
+      "action_pred": "ASK",
+      "answer": "고객님이 이용하실 편의점 브랜드와 보내실 지역을 확인한 뒤 이용 가능 여부를 안내해 드리겠습니다. 어떤 편의점 브랜드를 이용하실 예정이신가요?",
+      "reference": "편의점 브랜드에 따라 제주 지역 이용 가능 여부와 운임이 달라집니다. 이용하실 브랜드를 알려주시면 확인해 안내드리겠습니다.",
+      "called_tools": [],
+      "expected_tools": [],
+      "guardrail": {
+        "ok": true,
+        "unsupported": [],
+        "checked_min": 1000,
+        "grounded_count": 16
+      },
+      "fallback": null,
+      "fallback_error": null,
+      "grade": {
+        "tools_ok": true,
+        "answer_ok": true,
+        "action_ok": true,
+        "expected_tools": [],
+        "actual_tools": [],
+        "missing": [],
+        "violated": [],
+        "unasked": [],
+        "judged_by_llm": []
+      },
+      "reason": "통과"
+    },
+    {
+      "item_id": "N-003#4",
+      "question": "CU요. 2kg 정도에 세 변 합 80cm 안 넘어요.",
+      "route_gold": "CVS_PICKUP",
+      "route_pred": "CVS_PICKUP",
+      "confidence": 0.8,
+      "action_gold": "ANSWER",
+      "action_pred": "ANSWER",
+      "answer": "CU편의점택배로 제주도에 보내실 경우, 기본 운임은 3,490원이며, 제주 지역 추가운임은 3,000원이 발생합니다. 예약을 원하시면 추가 정보를 제공해 주시면 확인해 드리겠습니다.",
+      "reference": "CU편의점택배 기준 2kg·세 변 합 80cm 이하는 3,490원이며, 제주 지역은 3,000원의 추가운임이 붙습니다. 확정 금액은 예약 화면에서 확인해 주세요.",
+      "called_tools": [
+        "get_cvs_rate"
+      ],
+      "expected_tools": [
+        "get_cvs_rate"
+      ],
+      "guardrail": {
+        "ok": true,
+        "unsupported": [],
+        "checked_min": 1000,
+        "grounded_count": 20
+      },
+      "fallback": null,
+      "fallback_error": null,
+      "grade": {
+        "tools_ok": true,
+        "answer_ok": true,
+        "action_ok": true,
+        "expected_tools": [
+          "get_cvs_rate"
+        ],
+        "actual_tools": [
+          "get_cvs_rate"
+        ],
+        "missing": [],
+        "violated": [],
+        "unasked": [],
+        "judged_by_llm": []
+      },
+      "reason": "통과"
+    },
+    {
+      "item_id": "N-004#2",
+      "question": "박스 크기는 어떻게 재나요? 제일 긴 쪽 기준인가요?",
+      "route_gold": "SPEC_SHIPPING",
+      "route_pred": "SPEC_SHIPPING",
+      "confidence": 0.9,
+      "action_gold": "ANSWER",
+      "action_pred": "ANSWER",
+      "answer": "포장이 완료된 상태에서 가로·세로·높이를 각각 측정한 뒤, 세 변의 길이를 합산하여야 합니다. 예를 들어, 가로 40cm, 세로 30cm, 높이 20cm일 경우 세 변의 합은 90cm입니다. 추가로 궁금한 점이 있으신가요?",
+      "reference": "포장이 완료된 상태에서 가로·세로·높이를 각각 재신 뒤 세 변의 길이를 더한 값을 기준으로 합니다. 예를 들어 40cm·30cm·20cm면 세 변 합 90cm입니다.",
+      "called_tools": [],
+      "expected_tools": [],
+      "guardrail": {
+        "ok": true,
+        "unsupported": [],
+        "checked_min": 1000,
+        "grounded_count": 14
+      },
+      "fallback": null,
+      "fallback_error": null,
+      "grade": {
+        "tools_ok": true,
+        "answer_ok": true,
+        "action_ok": true,
+        "expected_tools": [],
+        "actual_tools": [],
+        "missing": [],
+        "violated": [],
+        "unasked": [],
+        "judged_by_llm": []
+      },
+      "reason": "통과"
+    },
+    {
+      "item_id": "N-005#2",
+      "question": "쿠팡 주문인데 운송장번호가 쇼핑몰에 등록이 안 돼요.",
+      "route_gold": "BIZ_BULK",
+      "route_pred": "BIZ_BULK",
+      "confidence": 0.7,
+      "action_gold": "ANSWER",
+      "action_pred": "ASK",
+      "answer": "운송장번호가 정상적으로 발급됐는지 확인이 필요합니다. 또한, 주문이 운송장 전송 가능한 상태인지도 점검해야 합니다. 운송장번호를 알려주시면 추가로 확인해 드리겠습니다.",
+      "reference": "운송장번호가 정상 발급됐는지, 주문연동을 통해 접수한 예약이 맞는지, 운송장 전송이 가능한 상태인지(방문택배는 집하 상태, 편의점택배는 운송장출력 상태) 순서대로 확인해 주세요. 그래도 등록되지 않으면 쇼핑몰명·주문번호·운송장번호를 알려주시면 확인해 드리겠습니다.",
+      "called_tools": [],
+      "expected_tools": [],
+      "guardrail": {
+        "ok": true,
+        "unsupported": [],
+        "checked_min": 1000,
+        "grounded_count": 12
+      },
+      "fallback": null,
+      "fallback_error": null,
+      "grade": {
+        "tools_ok": true,
+        "answer_ok": false,
+        "action_ok": false,
+        "expected_tools": [],
+        "actual_tools": [],
+        "missing": [
+          "집하"
+        ],
+        "violated": [],
+        "unasked": [],
+        "judged_by_llm": []
+      },
+      "reason": "필수_사실_누락"
+    },
+    {
+      "item_id": "N-006#2",
+      "question": "택배 예약 어디서 해요? 처음이라 하나도 모르겠어요.",
+      "route_gold": "RESERVE_GENERAL",
+      "route_pred": "RESERVE_GENERAL",
+      "confidence": 0.9,
+      "action_gold": "ANSWER",
+      "action_pred": "ANSWER",
+      "answer": "예약은 앱 또는 웹에 로그인한 뒤 예약 메뉴에서 시작하실 수 있습니다. 서비스 선택 화면이 첫 단계이며, 회원가입과 로그인이 선행되어야 합니다. 추가로 궁금한 점이 있으시면 말씀해 주세요.",
+      "reference": "앱이나 웹에 로그인하신 뒤 예약 메뉴에서 서비스를 고르시면 예약이 시작됩니다. 서비스 선택부터 결제까지 화면 안내를 따라가시면 됩니다.",
+      "called_tools": [],
+      "expected_tools": [],
+      "guardrail": {
+        "ok": true,
+        "unsupported": [],
+        "checked_min": 1000,
+        "grounded_count": 12
+      },
+      "fallback": null,
+      "fallback_error": null,
+      "grade": {
+        "tools_ok": true,
+        "answer_ok": true,
+        "action_ok": true,
+        "expected_tools": [],
+        "actual_tools": [],
+        "missing": [],
+        "violated": [],
+        "unasked": [],
+        "judged_by_llm": []
+      },
+      "reason": "통과"
+    },
+    {
+      "item_id": "N-007#2",
+      "question": "전화로 예약되나요? 지금 대신 좀 해주세요.",
+      "route_gold": "RESERVE_GENERAL",
+      "route_pred": "RESERVE_GENERAL",
+      "confidence": 0.7,
+      "action_gold": "ANSWER",
+      "action_pred": "OUT_OF_SCOPE",
+      "answer": "전화로는 예약을 받지 않으며, 이 서비스는 온라인 전용입니다. 앱 또는 웹에 로그인한 뒤 예약 메뉴에서 진행해 주시기 바랍니다. 도움이 필요하시면 구체적인 절차를 안내해 드리겠습니다.",
+      "reference": "전화로는 예약을 받지 않습니다. 온라인 전용 서비스라 앱이나 웹에서 로그인하신 뒤 예약 메뉴에서 직접 접수해 주셔야 합니다.",
+      "called_tools": [],
+      "expected_tools": [],
+      "guardrail": {
+        "ok": true,
+        "unsupported": [],
+        "checked_min": 1000,
+        "grounded_count": 12
+      },
+      "fallback": null,
+      "fallback_error": null,
+      "grade": {
+        "tools_ok": true,
+        "answer_ok": true,
+        "action_ok": false,
+        "expected_tools": [],
+        "actual_tools": [],
+        "missing": [],
+        "violated": [],
+        "unasked": [],
+        "judged_by_llm": []
+      },
+      "reason": "통과"
+    },
+    {
+      "item_id": "N-008#2",
+      "question": "예약한 내역이 사라졌어요. 확인할 수가 없네요.",
+      "route_gold": "SPEC_SHIPPING",
+      "route_pred": "SPEC_SHIPPING",
+      "confidence": 0.7,
+      "action_gold": "ANSWER",
+      "action_pred": "ASK",
+      "answer": "예약 내역이 사라진 경우, 다음을 확인해 주셔야 합니다. 1. 예약할 때 쓴 계정으로 로그인했는지, 2. 예약일이 3개월 이내인지, 3. 결제까지 마쳐 예약이 정상 완료됐는지 확인해 주시기 바랍니다. 예약번호나 운송장번호를 알려주시면 더 정확히 안내해 드리겠습니다.",
+      "reference": "예약현황 메뉴는 예약하실 때 쓰신 계정으로 로그인해야 보이고, 최근 3개월 이내 예약만 조회됩니다. 계정과 예약일을 먼저 확인해 주시겠어요?",
+      "called_tools": [],
+      "expected_tools": [],
+      "guardrail": {
+        "ok": true,
+        "unsupported": [],
+        "checked_min": 1000,
+        "grounded_count": 14
+      },
+      "fallback": null,
+      "fallback_error": null,
+      "grade": {
+        "tools_ok": true,
+        "answer_ok": true,
+        "action_ok": false,
+        "expected_tools": [],
+        "actual_tools": [],
+        "missing": [],
+        "violated": [],
+        "unasked": [],
+        "judged_by_llm": []
+      },
+      "reason": "통과"
+    },
+    {
+      "item_id": "N-009#2",
+      "question": "배송 조회는 어디서 해요?",
+      "route_gold": "SPEC_SHIPPING",
+      "route_pred": "SPEC_SHIPPING",
+      "confidence": 0.8,
+      "action_gold": "ANSWER",
+      "action_pred": "ANSWER",
+      "answer": "예약한 건과 배송 상태는 **예약현황(예약 내역 조회) 메뉴**에서 확인하실 수 있습니다. 예약할 때 사용한 계정으로 로그인하셔야 조회가 가능합니다. 추가로 궁금한 점이 있으시면 말씀해 주세요.",
+      "reference": "예약현황 메뉴에서 예약 정보와 배송 상태를 함께 확인하실 수 있습니다.",
+      "called_tools": [],
+      "expected_tools": [],
+      "guardrail": {
+        "ok": true,
+        "unsupported": [],
+        "checked_min": 1000,
+        "grounded_count": 14
+      },
+      "fallback": null,
+      "fallback_error": null,
+      "grade": {
+        "tools_ok": true,
+        "answer_ok": true,
+        "action_ok": true,
+        "expected_tools": [],
+        "actual_tools": [],
+        "missing": [],
+        "violated": [],
+        "unasked": [],
+        "judged_by_llm": []
+      },
+      "reason": "통과"
+    },
+    {
+      "item_id": "N-009#4",
+      "question": "제 건 지금 어디쯤이에요?",
+      "route_gold": "SPEC_SHIPPING",
+      "route_pred": "SPEC_SHIPPING",
+      "confidence": 0.9,
+      "action_gold": "ASK",
+      "action_pred": "ASK",
+      "answer": "예약현황에서 현재 상태를 확인해야 정확한 진행 상황을 안내해 드릴 수 있습니다. 예약번호 또는 운송장번호를 알려주시면 확인해 보겠습니다.",
+      "reference": "운송장번호나 예약번호를 알려주시면 현재 상태를 확인해 드리겠습니다.",
+      "called_tools": [],
+      "expected_tools": [],
+      "guardrail": {
+        "ok": true,
+        "unsupported": [],
+        "checked_min": 1000,
+        "grounded_count": 14
+      },
+      "fallback": null,
+      "fallback_error": null,
+      "grade": {
+        "tools_ok": true,
+        "answer_ok": true,
+        "action_ok": true,
+        "expected_tools": [],
+        "actual_tools": [],
+        "missing": [],
+        "violated": [],
+        "unasked": [],
+        "judged_by_llm": []
+      },
+      "reason": "통과"
+    }
+  ],
+  "config": {
+    "backend": "openai",
+    "model": "gpt-4o-mini",
+    "threshold": 0.4,
+    "judge": "openai",
+    "note": "",
+    "round": "#25",
+    "target": "agent.py gate",
+    "why": "확신도가 낮다는 이유만으로 첫 문의를 이관했다. '얼마에요?' 한 마디에 담당자를 부르면 되물음 한 번이면 끝날 일에 고객이 상담원을 기다린다",
+    "what": "같은 사안을 이미 되물었는데도 확신이 안 서면 그때 이관한다. 처음이면 계획 단계로 보내 되묻게 한다",
+    "memo": "화면에서 재현: '얼마에요?' → 전 ESCALATE, 후 ASK"
+  }
+}
