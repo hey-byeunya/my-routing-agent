@@ -51,7 +51,7 @@ python -m src.agent --dry-run "제주도인데 배송비 더 붙나요?"
 | `openai` | **필요** (`OPENAI_API_KEY`) | 가장 빠름 | 기본값. 기본 모델 `gpt-4o-mini` |
 | `claude` | 불필요 (구독 로그인) | 약 10초/건 | `claude --version` 으로 설치 확인. 기본 모델 `haiku` |
 | `opencode` | 불필요 | 약 25초/건 | 무료 모델 `opencode/nemotron-3.5-lightning-free`, 비용 0 |
-| `ollama` | 불필요 (로컬) | 모델·기기에 따라 | `ollama list` 로 서버 확인. 기본 `qwen2.5:3b` |
+| `ollama` | 불필요 (로컬) | 9B 로 26.6초/건 (실측) | `ollama list` 로 서버 확인. **3B 는 구조화 출력을 못 낸다** — `AGENT_MODEL_OLLAMA=qwen3.5:9b` 처럼 9B 이상을 쓴다 |
 | `replay` | 불필요 | 즉시 | `data/demo_cache.json` 에 녹화된 응답만 돌려준다 |
 
 **키가 하나도 없을 때** — `replay` 로 돌린다. 녹화된 응답을 프롬프트 해시로 되돌려 주는 모드이고, **진짜 모델 호출이 아니다.** 녹화에 없는 질문에는 답하지 못한다. replay 로 돌았다는 사실은 로그·화면·`store/metrics.jsonl` 에 모두 드러난다 — 조용히 다른 모드로 돌지 않는다.
@@ -75,11 +75,11 @@ python -m src.agent --backend replay "편의점택배 접수하면 언제 수거
 python scripts/check_context.py          # ① 카테고리별 근거 절 매핑·크기·겹침
 python scripts/check_mockdb.py           # ② 조회 도구가 무엇을 돌려주는가 (이름 해석·구간·할증)
 python scripts/check_grader.py           # ③ 모범 답안이 채점기에서 전부 만점인가
-python -m src.agent --dry-run "문의"      # ③ LLM 없이 앞단
-python -m src.llm_backends --smoke --backend all   # ④ 백엔드가 같은 구조로 답하는가
+python -m src.agent --dry-run "문의"      # ④ LLM 없이 앞단
+python -m src.llm_backends --smoke --backend all   # ⑤ 백엔드가 같은 구조로 답하는가
 ```
 
-②가 통과하기 전의 성능 수치는 믿지 않는다. 떨어지면 에이전트가 아니라 **채점기나 정답셋이 틀린 것이다.**
+①~③ 이 통과하기 전의 성능 수치는 믿지 않는다. ③ 이 떨어지면 에이전트가 아니라 **채점기나 정답셋이 틀린 것이다.**
 
 ## 평가
 
