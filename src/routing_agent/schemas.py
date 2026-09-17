@@ -53,9 +53,17 @@ def merge_route(original: str) -> str:
 class RouteDecision(BaseModel):
     """분류 노드가 내놓는 판정. 이관 여부는 여기서 정하지 않는다 — 확신도만 준다."""
 
-    route: ROUTES = Field(description="6개 카테고리 중 하나")
+    route: ROUTES = Field(description="6개 카테고리 중 하나. 가장 그럴듯한 것")
     confidence: float = Field(ge=0.0, le=1.0, description="이 판단에 대한 확신도. 애매하면 낮게.")
     reason: str = Field(description="이렇게 판단한 근거를 한 문장으로")
+    # 모델이 스스로 매기는 확신도는 난이도를 잘 알아채지 못한다 — 하드케이스에서
+    # 맞은 건 평균 0.657, 틀린 건 0.643 으로 사실상 같았다(REPORT §4). 그래서
+    # **두 번째로 그럴듯한 후보**를 함께 받는다. 1·2순위가 비슷하게 그럴듯하면
+    # 그 문의는 실제로 두 갈래에 걸쳐 있는 것이고, 그건 확신도보다 알아채기 쉽다.
+    alt_route: ROUTES = Field(description="두 번째로 그럴듯한 카테고리. 없으면 1순위와 같게 적어라")
+    alt_confidence: float = Field(
+        ge=0.0, le=1.0, description="두 번째 후보의 확신도. 1순위보다 높을 수 없다."
+    )
 
 
 # CLOSE 는 "더 물을 것이 없다"는 고객 발화에 대응한다. 이것이 없으면 그런 턴이

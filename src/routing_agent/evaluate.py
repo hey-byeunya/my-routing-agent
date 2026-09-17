@@ -20,7 +20,7 @@ BASE = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(BASE))
 
 from routing_agent import record  # noqa: E402
-from routing_agent.agent import DEFAULT_THRESHOLD, build_graph, called_tools  # noqa: E402
+from routing_agent.agent import DEFAULT_THRESHOLD, MIN_MARGIN, build_graph, called_tools  # noqa: E402
 from routing_agent.dataset import assert_split_disjoint, gold_eval_turns  # noqa: E402
 from routing_agent.grader import failure_reason, grade_turn, summarize  # noqa: E402
 from routing_agent.llm_backends import backend_of, make_llm  # noqa: E402
@@ -188,7 +188,11 @@ def run_hardcases(llm, concurrency: int, limit: int | None, rule_only: bool = Fa
             results.append({**base, "pred": None, "confidence": 0.0, "ok": False, "lenient": False, "error": reason})
             continue
         ok = out.route == gold
+        margin = (1.0 if out.alt_route == out.route
+                  else max(0.0, out.confidence - out.alt_confidence))
         results.append({**base, "pred": out.route, "confidence": out.confidence, "reason": out.reason,
+                        "alt_route": out.alt_route, "alt_confidence": out.alt_confidence,
+                        "margin": margin,
                         "ok": ok, "lenient": ok or (bool(alt) and out.route == alt)})
 
     # ── 되물음 갈래 (파이프라인을 끝까지 돌려야 action 이 나온다)
@@ -252,6 +256,15 @@ def run_hardcases(llm, concurrency: int, limit: int | None, rule_only: bool = Fa
         "mean_conf_wrong": round(sum(wrong) / len(wrong), 3) if wrong else None,
         "wrong_below_tau": sum(1 for r in route_res if not r["ok"] and r["pred"] and r["confidence"] < threshold),
         "wrong_total": len(wrong),
+        # 마진이 난이도를 알아채는가 — 확신도가 못 하던 일이다
+        "mean_margin_correct": (lambda v: round(sum(v) / len(v), 3) if v else None)(
+            [r["margin"] for r in route_res if r["ok"] and r.get("margin") is not None]),
+        "mean_margin_wrong": (lambda v: round(sum(v) / len(v), 3) if v else None)(
+            [r["margin"] for r in route_res if not r["ok"] and r.get("margin") is not None]),
+        "wrong_caught_by_margin": sum(
+            1 for r in route_res if not r["ok"] and r.get("margin") is not None and r["margin"] < MIN_MARGIN),
+        "correct_flagged_by_margin": sum(
+            1 for r in route_res if r["ok"] and r.get("margin") is not None and r["margin"] < MIN_MARGIN),
         "tau": threshold,
     }
     return {"task": "hardcases", "metrics": metrics, "results": results}
@@ -271,8 +284,11 @@ def print_hardcases(payload: dict) -> None:
 
     if m["mean_conf_correct"] is not None:
         print(f"\n확신도(라우팅 갈래): 맞은 건 평균 {m['mean_conf_correct']} · 틀린 건 평균 {m['mean_conf_wrong']}")
-        print(f"틀린 {m['wrong_total']}건 중 확신도 τ({m['tau']}) 미만은 {m['wrong_below_tau']}건 "
-              f"— 게이트가 걸러 되묻게 되는 몫이다")
+        print(f"틀린 {m['wrong_total']}건 중 확신도 τ({m['tau']}) 미만은 {m['wrong_below_tau']}건")
+    if m.get("mean_margin_correct") is not None:
+        print(f"마진(1·2순위 차): 맞은 건 평균 {m['mean_margin_correct']} · 틀린 건 평균 {m['mean_margin_wrong']}")
+        print(f"  마진 {MIN_MARGIN} 미만으로 잡힌 것 — 틀린 건 {m['wrong_caught_by_margin']}/{m['wrong_total']}, "
+              f"맞은 건 {m['correct_flagged_by_margin']} (이건 괜한 되물음이 되는 몫)")
 
     wrong = [r for r in payload["results"] if r["pred"] and not r["ok"]]
     if wrong:

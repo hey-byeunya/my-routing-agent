@@ -38,6 +38,12 @@ DEFAULT_THRESHOLD = 0.4
 # 정책 §10.2 가 "동일 사안 3회 이상"을 이관 조건으로 두는 것에 맞춘다.
 ASK_LIMIT = 3
 
+# 1·2순위 확신도 차(마진)로 애매한 문의를 걸러 보려 했으나 **듣지 않았다**(#33).
+# 하드케이스 30건에서 마진 0.15 미만으로 잡힌 것은 틀린 건 0/6, 맞은 건 3건이었다 —
+# 잡아야 할 것은 하나도 못 잡고 멀쩡한 판정에만 괜한 되물음을 붙였다. 게이트는
+# 확신도만 본다. 2순위를 묻는 것 자체는 남겼다(top-1 이 조금 올랐다, REPORT §4).
+MIN_MARGIN = 0.15
+
 # 근거 없는 수치가 끝내 남았을 때 대신 내보내는 문장.
 # 정책 §0 원칙1 이 "값을 모를 때 쓸 문장"으로 정해 둔 것을 그대로 쓴다.
 UNVERIFIED_ANSWER_TEXT = "정확한 운임을 확인해 드리겠습니다. 잠시만 기다려 주세요."
@@ -53,6 +59,9 @@ class AgentState(TypedDict, total=False):
     route: str
     confidence: float
     reason: str
+    alt_route: str
+    alt_confidence: float
+    margin: float
     context: str
     context_units: list[str]
     messages: Annotated[list, add_messages]
@@ -170,12 +179,23 @@ def build_graph(
                 wait_exponential_jitter=False,
             )
             decision: RouteDecision = chain.invoke(prompt)
-            log("1/6 판정", f"{decision.route} conf={decision.confidence:.2f}")
+            # 2순위가 1순위와 같으면 갈릴 것이 없다는 뜻이라 마진을 최대로 본다.
+            margin = (
+                1.0 if decision.alt_route == decision.route
+                else max(0.0, decision.confidence - decision.alt_confidence)
+            )
+            log("1/6 판정",
+                f"{decision.route} conf={decision.confidence:.2f}"
+                f" · 2순위 {decision.alt_route} {decision.alt_confidence:.2f} (마진 {margin:.2f})")
             return {
                 "route": decision.route,
                 "confidence": decision.confidence,
                 "reason": decision.reason,
-                "trace": _note(state, "classify", route=decision.route, confidence=decision.confidence),
+                "alt_route": decision.alt_route,
+                "alt_confidence": decision.alt_confidence,
+                "margin": margin,
+                "trace": _note(state, "classify", route=decision.route, confidence=decision.confidence,
+                               alt_route=decision.alt_route, margin=round(margin, 3)),
             }
         except Exception as exc:  # noqa: BLE001 - 어떤 실패든 폴백으로 흘려보낸다
             route = prompts.rule_route(question)
@@ -184,6 +204,9 @@ def build_graph(
                 "route": route,
                 "confidence": 0.0,
                 "reason": f"LLM 판정 실패로 규칙 기반 폴백 ({type(exc).__name__})",
+                "alt_route": route,
+                "alt_confidence": 0.0,
+                "margin": 1.0,
                 "fallback": "classify",
                 "trace": _note(state, "classify", route=route, confidence=0.0, fallback=str(exc)[:200]),
             }
