@@ -16,11 +16,11 @@ from routing_agent.schemas import ROUTE_LABELS
 ROUTE_GUIDE_TABLE = """\
 | 코드 | 이름 | 무엇을 담는가 |
 |---|---|---|
-| RESERVE_GENERAL | 택배예약 일반 | 서비스 소개·가입·예약 방법·택배사 비교·최저가처럼 아직 어느 서비스인지 정해지지 않은 진입 단계 문의 |
+| RESERVE_GENERAL | 택배예약 일반 | 서비스 소개·가입·예약 방법·택배사 비교·최저가처럼 아직 어느 서비스인지 정해지지 않은 진입 단계 문의. **"어디서 예약해요", "어떻게 해요", "전화로 되나요" 같은 예약 경로 문의도 여기다** |
 | VISIT_PICKUP | 방문택배 | 기사 방문수거를 전제한 문의. 방문 일정·미방문·방문택배 운임 |
 | CVS_PICKUP | 편의점택배 | 편의점에서 직접 접수하는 문의. 브랜드(CU·GS·이마트24·세븐일레븐)·반값택배·편의점 접수 오류 |
 | BIZ_BULK | 사업자·대량 발송 | 여러 박스 동시 발송(다량할인), 사업자 인증 기반 정기 발송(소호사업자), 쇼핑몰 주문연동(스마트스토어·쿠팡). **소호사업자 신청 절차와 운영 조건도 여기다** — 사업자 인증, 집하주소 등록, 간편결제 등록, 택배사 승인, 월 발송량 조건. **셀러의 대량 처리 문의도 여기다** — 주문 수집, 운송장 자동 전송, 여러 건 동시 입력, 반품 접수 관리 |
-| SPEC_SHIPPING | 규격·배송·취소 | 서비스 종류와 무관한 공통 문의. 박스 규격 측정, 배송조회, 예약번호·운송장번호, 예약 취소·주소 변경, 반입 제한 물품 |
+| SPEC_SHIPPING | 규격·배송·취소 | 서비스 종류와 무관한 공통 문의. 박스 규격 측정, 배송조회, 예약번호·운송장번호, **예약 내역 조회 화면과 조회 기간**, 예약 취소·주소 변경, 반입 제한 물품 |
 | OTHER | 응대 범위 밖 | 오프라인 매장 위치·운영시간, 타 채널(오픈마켓 등)에서 발생한 주문·결제 자체의 처리, 입점·채용·세금계산서 등 행정 문의, **택배사 내부 배송사고(분실·파손 원인 규명과 보상)** |
 """
 
@@ -128,11 +128,22 @@ def _plan_examples(limit: int = 4) -> str:
     return "\n\n".join(rows)
 
 
-def plan_prompt(route: str, context: str, tool_menu: str, history: str, question: str) -> str:
+def plan_prompt(route: str, context: str, tool_menu: str, history: str, question: str,
+                progress: str = "") -> str:
+    """progress 는 파이썬이 센 사실이다 — 이 대화에서 몇 번째 발화이고 안내를 몇 번 했는지.
+
+    세는 일은 LLM 에게 맡기지 않는다. 대화가 길어지면 모델은 횟수를 틀리게 세고,
+    §10.2 의 "동일 사안 3회 이상 반복" 같은 기준은 셈이 틀리면 그대로 무너진다.
+    파이썬이 사실을 주고, 그 기준을 적용할지는 LLM 이 정한다.
+    """
     label = ROUTE_LABELS.get(route, route)
     parts = [
         PLAN_RULES,
         f"[이번 문의의 카테고리] {route} ({label})",
+    ]
+    if progress:
+        parts.append(f"[대화 진행 상황]\n{progress}")
+    parts += [
         f"[근거 문서]\n{context}",
         f"[부를 수 있는 도구]\n{tool_menu}",
     ]

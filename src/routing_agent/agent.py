@@ -64,6 +64,24 @@ def _history_text(history: list[tuple[str, str]] | None) -> str:
     return "\n".join(f"{who.get(role, role)}: {text}" for role, text in history if text)
 
 
+def conversation_progress(history: list[tuple[str, str]] | None) -> str:
+    """이 대화에서 고객이 몇 번째로 말하고 있고, 상담원이 몇 번 안내했는지.
+
+    정책 §10.2 는 "동일 사안 3회 이상 반복 문의"와 "반복 안내 후에도 지속"을
+    이관 조건으로 둔다. 둘 다 **세어야** 아는 것이라 파이썬이 센다. 한 대화는
+    한 사안이라고 본다 — 대화 도중 화제가 바뀌면 이 셈은 느슨해지지만, 모델이
+    긴 이력을 훑어 세는 것보다는 틀릴 여지가 적다.
+    """
+    if not history:
+        return ""
+    customer = sum(1 for role, _ in history if role == "customer")
+    agent = sum(1 for role, text in history if role == "agent" and text)
+    line = f"이번이 고객의 {customer + 1}번째 발화다. 상담원은 이미 {agent}번 안내했다."
+    if customer + 1 >= 3:
+        line += " 같은 사안이 반복되고 있다면 §10.2 의 이관 기준을 검토하라."
+    return line
+
+
 def _tool_results_text(messages: list) -> str:
     rows = []
     for message in messages:
@@ -160,6 +178,7 @@ def build_graph(
             tool_menu=tool_menu(route),
             history=_history_text(state.get("history")),
             question=state["question"],
+            progress=conversation_progress(state.get("history")),
         )
         allowed = {t.name for t in tools_for(route)}
         try:

@@ -211,6 +211,120 @@ PATCHES = [
 ]
 
 
+# 화면 경로 문의. 원본 정답셋에는 "무엇이 얼마인가"만 있고 "어디서 하는가"가 없었다.
+# 실제 문의에서 큰 비중을 차지하는데 매뉴얼에도 없어서, §2(예약 경로)와 §5.4(예약
+# 내역·배송 조회 경로, 3개월 보관)를 먼저 매뉴얼에 넣고 그 근거로 저작했다.
+# 둘 다 건별로 달라지는 값이 아니므로 도구를 부르지 않는다 — tools=[] 가 정답이다.
+NAVIGATION_CONVERSATIONS = [
+    {
+        "conv_id": "N-006",
+        "title": "처음 이용 — 예약 경로 안내로 끝난다",
+        "route": "RESERVE_GENERAL",
+        "route_original": "RESERVE_GENERAL",
+        "pattern": "정책안내",
+        "tests": ["🔧 불필요한 조회 금지", "경로 안내로 종결"],
+        "turns": [
+            {"turn": 1, "role": "customer", "text": "택배 예약 어디서 해요? 처음이라 하나도 모르겠어요."},
+            {
+                "turn": 2,
+                "role": "agent",
+                "expect": {
+                    "action": "ANSWER",
+                    "tools": [],
+                    "must": ["로그인", "예약"],
+                    "forbid": ["3800", "예약번호를 알려주시면"],
+                    "rubric": "정책 §2: 예약은 로그인 후 예약 메뉴에서 시작한다. 처음 이용 문의는 경로 안내로 끝낸다. 운임·상태 조회는 필요 없다.",
+                    "reference": "앱이나 웹에 로그인하신 뒤 예약 메뉴에서 서비스를 고르시면 예약이 시작됩니다. 서비스 선택부터 결제까지 화면 안내를 따라가시면 됩니다.",
+                },
+            },
+        ],
+    },
+    {
+        "conv_id": "N-007",
+        "title": "전화 예약 문의 — 온라인 전용 안내",
+        "route": "RESERVE_GENERAL",
+        "route_original": "RESERVE_GENERAL",
+        "pattern": "정책안내",
+        "tests": ["전화 접수 불가", "대신 접수해 주지 않음"],
+        "turns": [
+            {"turn": 1, "role": "customer", "text": "전화로 예약되나요? 지금 대신 좀 해주세요."},
+            {
+                "turn": 2,
+                "role": "agent",
+                "expect": {
+                    "action": "ANSWER",
+                    "tools": [],
+                    "must": ["온라인"],
+                    "forbid": ["대신 예약해 드리겠습니다", "접수해 드렸습니다"],
+                    "rubric": "정책 §2·§10.1: 전화 예약을 받지 않는 온라인 전용 서비스다. 상담 채널이 접수를 대신하지 않는다. 경로를 안내하고 끝낸다.",
+                    "reference": "전화로는 예약을 받지 않습니다. 온라인 전용 서비스라 앱이나 웹에서 로그인하신 뒤 예약 메뉴에서 직접 접수해 주셔야 합니다.",
+                },
+            },
+        ],
+    },
+    {
+        "conv_id": "N-008",
+        "title": "예약 내역이 안 보임 — 조회 기간 3개월",
+        "route": "SPEC_SHIPPING",
+        "route_original": "SPEC_SHIPPING",
+        "pattern": "정책안내",
+        "tests": ["🔧 3개월 보관 기간", "계정 확인 우선"],
+        "turns": [
+            {"turn": 1, "role": "customer", "text": "예약한 내역이 사라졌어요. 확인할 수가 없네요."},
+            {
+                "turn": 2,
+                "role": "agent",
+                "expect": {
+                    "action": "ANSWER",
+                    "tools": [],
+                    "must": ["3개월", "계정"],
+                    "forbid": ["예약이 취소되었습니다", "삭제되었습니다"],
+                    "rubric": "정책 §5.4: 예약현황은 예약할 때 쓴 계정으로, 최근 3개월까지만 조회된다. 안 보인다고 취소·삭제로 단정하면 실패(§0 원칙 2).",
+                    "reference": "예약현황 메뉴는 예약하실 때 쓰신 계정으로 로그인해야 보이고, 최근 3개월 이내 예약만 조회됩니다. 계정과 예약일을 먼저 확인해 주시겠어요?",
+                },
+            },
+        ],
+    },
+    {
+        "conv_id": "N-009",
+        "title": "배송조회 경로 → 상태는 조회 없이 단정하지 않는다",
+        "route": "SPEC_SHIPPING",
+        "route_original": "SPEC_SHIPPING",
+        "pattern": "식별자요청",
+        "tests": ["경로 안내", "🔧 상태 단정 금지"],
+        "turns": [
+            {"turn": 1, "role": "customer", "text": "배송 조회는 어디서 해요?"},
+            {
+                "turn": 2,
+                "role": "agent",
+                "expect": {
+                    "action": "ANSWER",
+                    "tools": [],
+                    "must": ["예약현황"],
+                    "forbid": ["배송 중입니다", "도착했습니다"],
+                    "rubric": "정책 §5.4: 예약현황 화면에서 예약정보와 배송상태를 함께 본다. 상태 자체는 조회 없이 말하지 않는다.",
+                    "reference": "예약현황 메뉴에서 예약 정보와 배송 상태를 함께 확인하실 수 있습니다.",
+                },
+            },
+            {"turn": 3, "role": "customer", "text": "제 건 지금 어디쯤이에요?"},
+            {
+                "turn": 4,
+                "role": "agent",
+                "expect": {
+                    "action": "ASK",
+                    "tools": [],
+                    "must_ask": ["운송장번호 또는 예약번호"],
+                    "must": [],
+                    "forbid": ["배송 중입니다", "오늘 도착합니다"],
+                    "rubric": "정책 §0 원칙 2: 배송 상태는 조회 없이 말하지 않는다. 식별자가 없으면 되묻는다.",
+                    "reference": "운송장번호나 예약번호를 알려주시면 현재 상태를 확인해 드리겠습니다.",
+                },
+            },
+        ],
+    },
+]
+
+
 def apply_patches(payload: dict) -> list[str]:
     applied = []
     for patch in PATCHES:
@@ -234,7 +348,7 @@ def main() -> int:
     existing = {c["conv_id"] for c in payload["conversations"]}
 
     added = 0
-    for conv in NEW_CONVERSATIONS:
+    for conv in NEW_CONVERSATIONS + NAVIGATION_CONVERSATIONS:
         if conv["conv_id"] in existing:
             continue
         payload["conversations"].append(conv)
