@@ -15,7 +15,8 @@ from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
 
-BASE = Path(__file__).resolve().parent.parent
+# 저장소 루트. 패키지가 src/routing_agent/ 에 있으므로 두 단계 위가 아니라 세 단계 위다.
+BASE = Path(__file__).resolve().parents[2]
 MANUAL_PATH = BASE / "docs" / "policy_courierhub.md"
 
 # 장 번호를 앞에 단 제목에서 번호만 뽑는다. "4.1 방문택배 (택배사별)" → "4.1"
@@ -174,7 +175,7 @@ def count_tokens(text: str) -> int:
 
 def mapping_table() -> list[dict]:
     """카테고리별 절 목록과 크기. REPORT 와 check_context 가 함께 쓴다."""
-    from src.schemas import ROUTE_LIST
+    from routing_agent.schemas import ROUTE_LIST
 
     rows = []
     for route in ROUTE_LIST:

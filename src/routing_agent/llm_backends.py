@@ -37,7 +37,8 @@ from langchain_core.runnables import Runnable
 from langchain_core.utils.function_calling import convert_to_openai_tool
 from langchain_core.utils.json import parse_json_markdown
 
-BASE = Path(__file__).resolve().parent.parent
+# 저장소 루트. 패키지가 src/routing_agent/ 에 있으므로 두 단계 위가 아니라 세 단계 위다.
+BASE = Path(__file__).resolve().parents[2]
 BACKENDS = ("openai", "claude", "opencode", "ollama", "replay")
 
 DEFAULT_MODELS = {
@@ -545,7 +546,7 @@ def _openai_chat():
 
 def make_llm(backend: str | None = None, model: str | None = None, *, quiet: bool = False) -> BaseChatModel:
     """어느 백엔드든 같은 인터페이스로 돌려준다."""
-    from src import llm_cache
+    from routing_agent import llm_cache
 
     llm_cache.install()
 
@@ -599,7 +600,7 @@ def _smoke(backends: Iterable[str]) -> int:
     """같은 질문에 백엔드들이 같은 구조로 답하는지 본다."""
     import time
 
-    from src.schemas import ROUTE_LABELS, ROUTE_LIST, RouteDecision
+    from routing_agent.schemas import ROUTE_LABELS, ROUTE_LIST, RouteDecision
 
     question = "롯데택배로 방문택배 보내려는데 제주도면 배송비가 더 붙나요?"
     # 카테고리 목록을 여기 또 적지 않는다. 카테고리가 늘거나 줄 때 한 곳만 고치면

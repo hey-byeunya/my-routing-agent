@@ -7,12 +7,8 @@
 
 from __future__ import annotations
 
-import sys
-from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-
-from src.context import (  # noqa: E402
+from routing_agent.context import (
     ROUTE_SECTIONS,
     build_context,
     common_units,
@@ -21,7 +17,7 @@ from src.context import (  # noqa: E402
     select_units,
     split_units,
 )
-from src.schemas import ROUTE_LIST  # noqa: E402
+from routing_agent.schemas import ROUTE_LIST
 
 # 운임표는 카테고리를 가르는 핵심 근거다. 한 카테고리에만 들어가야 한다.
 RATE_SECTIONS = {

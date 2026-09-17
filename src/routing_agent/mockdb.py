@@ -13,7 +13,8 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
-BASE = Path(__file__).resolve().parent.parent
+# 저장소 루트. 패키지가 src/routing_agent/ 에 있으므로 두 단계 위가 아니라 세 단계 위다.
+BASE = Path(__file__).resolve().parents[2]
 DATA_PATH = BASE / "data" / "mockdata_courierhub.json"
 
 

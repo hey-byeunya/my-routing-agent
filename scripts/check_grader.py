@@ -11,14 +11,11 @@ LLM 없이도 통과해야 채점의 바닥이 단단하다고 말할 수 있다
 from __future__ import annotations
 
 import argparse
-import sys
 from collections import Counter
-from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from src.dataset import gold_turns  # noqa: E402
-from src.grader import failure_reason, grade_turn, summarize  # noqa: E402
+from routing_agent.dataset import gold_turns
+from routing_agent.grader import failure_reason, grade_turn, summarize
 
 
 def main() -> int:
@@ -29,7 +26,7 @@ def main() -> int:
 
     llm = None
     if args.llm:
-        from src.llm_backends import make_llm
+        from routing_agent.llm_backends import make_llm
 
         llm = make_llm(args.backend)
 

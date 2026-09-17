@@ -20,7 +20,8 @@ from langchain_core.caches import BaseCache
 from langchain_core.load import dumps, loads
 from langchain_core.outputs import ChatGeneration, Generation
 
-BASE = Path(__file__).resolve().parent.parent
+# 저장소 루트. 패키지가 src/routing_agent/ 에 있으므로 두 단계 위가 아니라 세 단계 위다.
+BASE = Path(__file__).resolve().parents[2]
 DEFAULT_CACHE_DIR = BASE / "runs" / "cache"
 
 
@@ -89,7 +90,7 @@ def install(directory: Path | str = DEFAULT_CACHE_DIR) -> FileCache:
     from langchain_core.globals import set_llm_cache
 
     # loads() 가 beta 라 캐시 적중마다 경고를 찍는다. 의도한 사용이라 여기서만 끈다.
-    warnings.filterwarnings("ignore", category=LangChainBetaWarning, module="src.llm_cache")
+    warnings.filterwarnings("ignore", category=LangChainBetaWarning, module="routing_agent.llm_cache")
 
     if _installed is None:
         _installed = FileCache(directory)

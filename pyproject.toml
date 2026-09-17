@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "routing-agent"
+version = "0.1.0"
+description = "택배중계 고객응대 라우팅 에이전트 — 판정·근거 조립·도구 호출·답변·검증"
+requires-python = ">=3.11"
+dependencies = [
+    "langchain>=1.4,<2",
+    "langchain-core>=1.6,<2",
+    "langchain-openai>=1.6,<2",
+    "langgraph>=1.2,<2",
+    "pydantic>=2.13,<3",
+    "python-dotenv>=1.0",
+    "pandas>=2.2",
+    "scikit-learn>=1.5",
+    "streamlit>=1.40",
+]
+
+# src-layout: 패키지는 src/ 아래에만 있다. 이렇게 두면 저장소 루트에서 실행할 때
+# 설치되지 않은 소스가 우연히 import 되는 일이 없어, "설치된 것"과 "작업 중인 것"이
+# 갈리지 않는다. 파이썬 쪽에서 요즘 권장하는 배치다.
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[project.scripts]
+# 사람이 터미널에서 부르는 진입점. `pip install -e .` 뒤에 이름만으로 돈다.
+routing-agent = "routing_agent.agent:_main"
+routing-agent-eval = "routing_agent.evaluate:main"

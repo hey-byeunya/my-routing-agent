@@ -16,10 +16,10 @@ import streamlit as st
 from dotenv import load_dotenv
 from langchain_core.messages import AIMessage, ToolMessage
 
-from src.agent import DEFAULT_THRESHOLD, build_graph, called_tools
-from src.context import select_units
-from src.llm_backends import BACKENDS, BackendError, available, make_llm, models_for
-from src.tools import tool_menu
+from routing_agent.agent import DEFAULT_THRESHOLD, build_graph, called_tools
+from routing_agent.context import select_units
+from routing_agent.llm_backends import BACKENDS, BackendError, available, make_llm, models_for
+from routing_agent.tools import tool_menu
 
 load_dotenv()
 

@@ -11,14 +11,12 @@
 from __future__ import annotations
 
 import csv
-import sys
 from collections import Counter, defaultdict
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from src.dataset import eval_items  # noqa: E402
-from src.schemas import ROUTE_LIST  # noqa: E402
+from routing_agent.dataset import eval_items
+from routing_agent.schemas import ROUTE_LIST
 
 OUT = Path(__file__).resolve().parent.parent / "data" / "eval_set.csv"
 

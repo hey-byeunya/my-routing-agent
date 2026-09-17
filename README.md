@@ -16,7 +16,7 @@ graph TD;
 	verify --> __end__([end])
 ```
 
-구조도는 코드에서 직접 뽑는다: `python -m src.agent --mermaid x`
+구조도는 코드에서 직접 뽑는다: `python -m routing_agent.agent --mermaid x`
 
 > REPORT.md 는 **무엇을 왜 그렇게 만들었고 수치가 얼마인지**를 적는다. 이 문서는 **어떻게 돌리는지**만 적는다.
 
@@ -33,11 +33,17 @@ graph TD;
 ## 설치부터 첫 실행까지
 
 ```bash
+./run.sh check                  # 이 한 줄이면 .venv·설치·.env 까지 알아서 한다
+```
+
+손으로 하려면:
+
+```bash
 python -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
+pip install -e .                # src-layout 이라 설치해야 routing_agent 를 import 한다
 cp .env.example .env            # 쓸 백엔드에 맞춰 채운다 (아래 표)
 python scripts/check_context.py # LLM 없이 도는 점검 ①
-python -m src.agent --dry-run "제주도인데 배송비 더 붙나요?"
+python -m routing_agent.agent --dry-run "제주도인데 배송비 더 붙나요?"
 ```
 
 `--dry-run` 은 LLM 을 부르지 않고 **어떤 카테고리로 가서 어떤 근거 절이 프롬프트에 들어가는지**까지만 보여 준다. 키가 하나도 없어도 여기까지는 반드시 돈다. 기록(`store/metrics.jsonl`)도 남기지 않는다 — 구경용 실행이 수치에 섞이면 안 되기 때문이다.
@@ -61,8 +67,8 @@ python -m src.agent --dry-run "제주도인데 배송비 더 붙나요?"
 녹화본(`data/demo_cache.json`)은 **정식 런을 녹음해서** 만든다. 사람이 쓴 모범답안이 아니라 실제로 일어난 호출의 사본이다.
 
 ```bash
-AGENT_RECORD_REPLAY=1 python -m src.agent --backend claude "편의점택배 접수하면 언제 수거해 가나요?"
-python -m src.agent --backend replay "편의점택배 접수하면 언제 수거해 가나요?"   # 키 없이 같은 경로로
+AGENT_RECORD_REPLAY=1 python -m routing_agent.agent --backend claude "편의점택배 접수하면 언제 수거해 가나요?"
+python -m routing_agent.agent --backend replay "편의점택배 접수하면 언제 수거해 가나요?"   # 키 없이 같은 경로로
 ```
 
 녹음은 CLI 백엔드(`claude`·`opencode`)에서만 걸린다. `openai`·`ollama` 는 CLI 를 지나지 않기 때문이다.
@@ -77,8 +83,8 @@ python -m src.agent --backend replay "편의점택배 접수하면 언제 수거
 python scripts/check_context.py          # ① 카테고리별 근거 절 매핑·크기·겹침
 python scripts/check_mockdb.py           # ② 조회 도구가 무엇을 돌려주는가 (이름 해석·구간·할증)
 python scripts/check_grader.py           # ③ 모범 답안이 채점기에서 전부 만점인가
-python -m src.agent --dry-run "문의"      # ④ LLM 없이 앞단
-python -m src.llm_backends --smoke --backend all   # ⑤ 백엔드가 같은 구조로 답하는가
+python -m routing_agent.agent --dry-run "문의"      # ④ LLM 없이 앞단
+python -m routing_agent.llm_backends --smoke --backend all   # ⑤ 백엔드가 같은 구조로 답하는가
 ```
 
 ①~③ 이 통과하기 전의 성능 수치는 믿지 않는다. ③ 이 떨어지면 에이전트가 아니라 **채점기나 정답셋이 틀린 것이다.**
@@ -86,12 +92,12 @@ python -m src.llm_backends --smoke --backend all   # ⑤ 백엔드가 같은 구
 ## 평가
 
 ```bash
-python -m src.evaluate --task routing --backend claude --name routing_v3 \
+python -m routing_agent.evaluate --task routing --backend claude --name routing_v3 \
     --round "#3" --target "prompts.py route_guide" \
     --why "후속 턴이 앞 대화를 못 봐서 오분류" --what "classify 에 history 주입" \
     --memo "C-011#6 해결, C-003#2 남음"
 
-python -m src.evaluate --task answer --backend claude --judge-backend claude --name answer_v3
+python -m routing_agent.evaluate --task answer --backend claude --judge-backend claude --name answer_v3
 python scripts/report_table.py           # 회차별 종합 기록표 (REPORT.md 에 붙인다)
 ```
 
@@ -115,11 +121,11 @@ streamlit run app.py
 | **운임 금액·구간 변경** | 같은 파일의 해당 `tiers`, 그리고 매뉴얼 §4 운임 스냅샷 표 | 불필요 | `./run.sh check` 뒤 평가 재측정 |
 | **지역 추가운임 변경** | 같은 파일의 `region_surcharge` | 불필요 | 〃 |
 | **정책 문구·절차 변경** (예: 취소 기준, 반입 제한) | `docs/policy_courierhub.md` 의 해당 절 | 불필요 | `python scripts/check_context.py` |
-| **매뉴얼에 절이 추가/삭제/번호 변경** | 위 문서 + `src/context.py` 의 `ROUTE_SECTIONS`·`ALWAYS` 선택자 | **필요** | `check_context.py` 가 없는 절을 선택자로 쓰면 바로 실패한다 |
-| **업무 카테고리 자체가 늘거나 줄음** | `src/schemas.py`(라우트 목록) · `src/prompts.py`(분류 지침) · `src/context.py` · `src/tools.py`(`ROUTE_TOOLS`) · 평가셋 | **필요** | 라우팅 평가부터 다시 |
-| **새로운 조회 항목** (예: 픽업 가능 시간대) | `src/mockdb.py` 에 함수 + `src/tools.py` 에 `@tool` 래퍼 + `ROUTE_TOOLS` | **필요** | `check_mockdb.py` 에 픽스처 추가 |
+| **매뉴얼에 절이 추가/삭제/번호 변경** | 위 문서 + `src/routing_agent/context.py` 의 `ROUTE_SECTIONS`·`ALWAYS` 선택자 | **필요** | `check_context.py` 가 없는 절을 선택자로 쓰면 바로 실패한다 |
+| **업무 카테고리 자체가 늘거나 줄음** | `src/routing_agent/schemas.py`(라우트 목록) · `src/routing_agent/prompts.py`(분류 지침) · `src/routing_agent/context.py` · `src/routing_agent/tools.py`(`ROUTE_TOOLS`) · 평가셋 | **필요** | 라우팅 평가부터 다시 |
+| **새로운 조회 항목** (예: 픽업 가능 시간대) | `src/routing_agent/mockdb.py` 에 함수 + `src/routing_agent/tools.py` 에 `@tool` 래퍼 + `ROUTE_TOOLS` | **필요** | `check_mockdb.py` 에 픽스처 추가 |
 
-**택배사 이름은 코드에 적지 않는다.** 도구 설명(모델이 읽는 문서)에 붙는 이름 목록은 `src/tools.py` 의 `_fill_names()` 가 목데이터에서 읽어 채운다. 데이터에는 있는데 도구 설명에는 없는 상태가 생기면 모델은 그 택배사를 영영 못 부르기 때문이다.
+**택배사 이름은 코드에 적지 않는다.** 도구 설명(모델이 읽는 문서)에 붙는 이름 목록은 `src/routing_agent/tools.py` 의 `_fill_names()` 가 목데이터에서 읽어 채운다. 데이터에는 있는데 도구 설명에는 없는 상태가 생기면 모델은 그 택배사를 영영 못 부르기 때문이다.
 
 **정책이 바뀌면 수치도 다시 잰다.** 운임이 바뀌면 정답셋의 필수 사실(`data/answer_goldenset.json` 의 `must`)에 박힌 금액도 같이 바뀌어야 한다. 순서는 이렇다.
 
@@ -130,7 +136,7 @@ streamlit run app.py
 # 3. 정답셋의 금액이 옛 값이면 여기서 걸린다 (모범 답안이 떨어진다)
 #    → 정답셋을 고치고, 고친 근거를 커밋 메시지에 남긴다
 # 4. 두 지표를 다시 재고 기록에 한 줄 남긴다
-python -m src.evaluate --task answer --backend openai --name answer_2026Q4 \
+python -m routing_agent.evaluate --task answer --backend openai --name answer_2026Q4 \
     --round "#정책개정" --why "운임 개정 반영" --what "mockdata 4.1 구간 갱신"
 ```
 
@@ -147,19 +153,36 @@ python -m src.evaluate --task answer --backend openai --name answer_2026Q4 \
 | replay 가 답하지 못한다 | 녹화에 없는 질문이다. 녹화는 정식 런에서만 쌓인다 |
 | Streamlit 화면이 비어 있다 | 실행 버튼을 누르기 전에는 입력만 보인다 (`st.stop()`) |
 
+## 폴더 규칙
+
+`src/` 와 `scripts/` 를 가르는 기준은 하나다 — **누가 이 코드를 부르는가.**
+
+| | 부르는 주체 | 지우면 |
+| --- | --- | --- |
+| `src/routing_agent/` | 다른 코드가 `import` 한다 | 에이전트가 사라진다 |
+| `scripts/` | 사람이 터미널에서 실행한다 | 에이전트는 그대로 돈다 (검증·데이터 준비·리포트 생성) |
+
+둘 다 해당하면(예: `agent.py` 는 import 되기도 하고 `python -m routing_agent.agent` 로 돌기도 한다) **패키지에 두고 `__main__` 을 붙인다.** 실행된다는 이유만으로 `scripts/` 로 보내지 않는다.
+
+배치는 파이썬 쪽 요즘 권장인 **src-layout** 이다. 패키지가 `src/` 아래에만 있으면, 저장소 루트에서 실행할 때 설치되지 않은 소스가 우연히 import 되는 일이 없다 — "설치된 것"과 "작업 중인 것"이 갈리지 않는다. 그래서 `pip install -e .` 가 필요하고, `run.sh` 가 그것까지 대신 해 준다.
+
+의존성은 `pyproject.toml` 한 곳에만 적는다. `requirements.txt` 는 `-e .` 한 줄짜리 통로다 — 두 군데 적으면 반드시 어긋난다.
+
 ## 구조 한눈에
 
 | 파일 | 하는 일 |
 | --- | --- |
-| `src/llm_backends.py` | 백엔드 5종을 하나의 인터페이스로. CLI 백엔드에 구조화 출력을 얹는다 |
-| `src/llm_cache.py` | 프롬프트 해시 파일 캐시. 재채점 때 API 를 다시 부르지 않는다 |
-| `src/prompts.py` | 분류 지침·예시, 계획/답변 프롬프트, 규칙 기반 폴백 분류 |
-| `src/context.py` | 매뉴얼을 절 단위로 쪼개고 카테고리별로 고를 절을 정한다 |
-| `src/mockdb.py` · `src/tools.py` | 조회 로직과 그 LangChain 도구 래퍼 |
-| `src/agent.py` | LangGraph 파이프라인 6단계 + CLI |
-| `src/guardrail.py` | 근거에 없는 수치가 답변에 섞였는지 기계적으로 검사 |
-| `src/grader.py` · `src/evaluate.py` | 두 지표 채점과 평가 실행기 |
-| `src/record.py` | `store/metrics.jsonl` 에 1줄 1레코드로 덧붙인다 |
+| `src/routing_agent/llm_backends.py` | 백엔드 5종을 하나의 인터페이스로. CLI 백엔드에 구조화 출력을 얹는다 |
+| `src/routing_agent/llm_cache.py` | 프롬프트 해시 파일 캐시. 재채점 때 API 를 다시 부르지 않는다 |
+| `src/routing_agent/prompts.py` | 분류 지침·예시, 계획/답변 프롬프트, 규칙 기반 폴백 분류 |
+| `src/routing_agent/context.py` | 매뉴얼을 절 단위로 쪼개고 카테고리별로 고를 절을 정한다 |
+| `src/routing_agent/mockdb.py` · `src/routing_agent/tools.py` | 조회 로직과 그 LangChain 도구 래퍼 |
+| `src/routing_agent/agent.py` | LangGraph 파이프라인 6단계 + CLI |
+| `src/routing_agent/guardrail.py` | 근거에 없는 수치가 답변에 섞였는지 기계적으로 검사 |
+| `src/routing_agent/grader.py` · `src/routing_agent/evaluate.py` | 두 지표 채점과 평가 실행기 |
+| `src/routing_agent/record.py` | `store/metrics.jsonl` 에 1줄 1레코드로 덧붙인다 |
 | `scripts/check_*.py` | LLM 없이 도는 픽스처 검증 (근거 매핑 · 조회 도구 · 채점기) |
 | `scripts/report_table.py` | 그 기록에서 회차별 종합 기록표를 뽑는다 |
 | `app.py` | Streamlit 데모 |
+| `run.sh` | 사람이 쓰는 단일 창구 (demo/check/ask/dry/eval/table) |
+| `pyproject.toml` | 패키지 정의와 의존성 — 의존성의 유일한 출처 |

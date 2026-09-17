@@ -18,12 +18,10 @@ from __future__ import annotations
 
 import argparse
 import html
-import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from src.record import read_all  # noqa: E402
+from routing_agent.record import read_all
 
 COLUMNS = ["회차", "변경 대상", "핵심 변경 이유 (Why)", "핵심 변경 내용 (What)",
            "라우팅 (정확도 / macro F1)", "답변 (도구 / 적절성)", "성과 및 오답 메모"]
@@ -139,7 +137,7 @@ def main() -> int:
 
     entries = _rounds(read_all())
     if not entries:
-        print("평가 기록이 없다. src.evaluate 를 먼저 돌린다.")
+        print("평가 기록이 없다. routing_agent.evaluate 를 먼저 돌린다.")
         return 1
 
     text = as_markdown(entries) if args.format == "md" else as_html(entries)

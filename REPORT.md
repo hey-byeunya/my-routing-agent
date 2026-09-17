@@ -19,14 +19,19 @@
 
 | 과제 예시 | 실물 | 다르게 한 이유 |
 | --- | --- | --- |
-| `prompts.py` | `src/prompts.py` | 같다 |
-| `context.py` | `src/context.py` | 같다 |
-| `agent.py` | `src/agent.py` | 같다 |
-| `tools.py` | `src/mockdb.py` + `src/tools.py` | 조회 로직과 LangChain 래퍼를 갈랐다. 도구 목록이 바뀌어도 조회 로직은 그대로 두려고 |
-| (없음) | `src/llm_backends.py`, `src/llm_cache.py` | 백엔드 5종을 한 인터페이스로. 크레딧이 떨어져도 과제가 멈추지 않게 |
-| (없음) | `src/guardrail.py` | ④ 검증 단계를 LLM 없이 기계적으로 하는 부분 |
-| (없음) | `src/grader.py`, `src/evaluate.py`, `src/record.py` | 두 지표 채점과 실행 기록 |
+| `prompts.py` | `src/routing_agent/prompts.py` | 같다 |
+| `context.py` | `src/routing_agent/context.py` | 같다 |
+| `agent.py` | `src/routing_agent/agent.py` | 같다 |
+| `tools.py` | `src/routing_agent/mockdb.py` + `src/routing_agent/tools.py` | 조회 로직과 LangChain 래퍼를 갈랐다. 도구 목록이 바뀌어도 조회 로직은 그대로 두려고 |
+| (없음) | `src/routing_agent/llm_backends.py`, `src/routing_agent/llm_cache.py` | 백엔드 5종을 한 인터페이스로. 크레딧이 떨어져도 과제가 멈추지 않게 |
+| (없음) | `src/routing_agent/guardrail.py` | ④ 검증 단계를 LLM 없이 기계적으로 하는 부분 |
+| (없음) | `src/routing_agent/grader.py`, `src/routing_agent/evaluate.py`, `src/routing_agent/record.py` | 두 지표 채점과 실행 기록 |
 | (없음) | `scripts/check_*.py` | LLM 없이 도는 자체 검증 |
+| (없음) | `pyproject.toml` | 패키지 정의·의존성. 의존성은 여기 한 곳에만 적는다 |
+
+배치는 파이썬 쪽 요즘 권장인 **src-layout** 이다 — 패키지는 `src/routing_agent/` 에만 있고 `pip install -e .` 로 깐다. 저장소 루트에서 실행할 때 설치되지 않은 소스가 우연히 import 되는 일이 없어서, 채점자 환경과 개발 환경이 갈리지 않는다.
+
+`src/` 와 `scripts/` 를 가르는 기준은 **누가 부르는가** 하나다. 다른 코드가 import 하면 패키지, 사람이 터미널에서 실행하면 `scripts/`. 둘 다면 패키지에 두고 `__main__` 을 붙인다 — `agent.py`·`evaluate.py` 가 그렇다. 자세한 것은 README 의 "폴더 규칙".
 
 ---
 
@@ -232,7 +237,7 @@ graph TD;
 	verify --> __end__([end])
 ```
 
-`python -m src.agent --mermaid x` 의 출력이다 (가독성을 위해 분기 라벨만 붙였다).
+`python -m routing_agent.agent --mermaid x` 의 출력이다 (가독성을 위해 분기 라벨만 붙였다).
 
 **판정과 이관 결정을 갈랐다.** `classify` 는 카테고리와 확신도를 내놓기만 하고, 넘길지 말지는 그다음 파이썬 분기 함수가 임계값으로 정한다. 과제가 요구한 "확신이 없을 때 넘기는 판단"을 LLM 이 스스로 하게 두지 않는다.
 
@@ -279,7 +284,7 @@ graph LR
 | 가드레일 판정 | 근거 없는 수치가 있으면 빨갛게 |
 | 백엔드·소요 시간·폴백 배지 | 어느 백엔드로 돌았는지, 폴백이었는지 |
 
-**터미널 캡처와 화면 캡처는 역할이 다르다.** 터미널(`python -m src.evaluate …`)은 *수치가 어떻게 나왔는지*에 대한 증거이고, Streamlit 화면은 *한 건이 어떤 경로로 답이 됐는지*에 대한 증거다. 둘 다 있어야 "수치가 맞다"와 "동작이 맞다"를 각각 보일 수 있다.
+**터미널 캡처와 화면 캡처는 역할이 다르다.** 터미널(`python -m routing_agent.evaluate …`)은 *수치가 어떻게 나왔는지*에 대한 증거이고, Streamlit 화면은 *한 건이 어떤 경로로 답이 됐는지*에 대한 증거다. 둘 다 있어야 "수치가 맞다"와 "동작이 맞다"를 각각 보일 수 있다.
 
 브라우저로 확인한 네 경우:
 

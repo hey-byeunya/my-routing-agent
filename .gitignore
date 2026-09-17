@@ -1,6 +1,8 @@
 .env
 .venv/
 __pycache__/
+# pip install -e . 가 만드는 빌드 산출물
+*.egg-info/
 *.pyc
 # 평가 원본(runs/*.json)은 REPORT 의 근거라 커밋한다. 캐시만 제외한다.
 runs/cache/

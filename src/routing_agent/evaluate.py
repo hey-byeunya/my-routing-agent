@@ -15,16 +15,17 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
-BASE = Path(__file__).resolve().parent.parent
+# 저장소 루트. 패키지가 src/routing_agent/ 에 있으므로 두 단계 위가 아니라 세 단계 위다.
+BASE = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(BASE))
 
-from src import record  # noqa: E402
-from src.agent import DEFAULT_THRESHOLD, build_graph, called_tools  # noqa: E402
-from src.dataset import assert_split_disjoint, gold_eval_turns  # noqa: E402
-from src.grader import failure_reason, grade_turn, summarize  # noqa: E402
-from src.llm_backends import backend_of, make_llm  # noqa: E402
-from src.prompts import route_guide  # noqa: E402
-from src.schemas import ROUTE_LIST, RouteDecision  # noqa: E402
+from routing_agent import record  # noqa: E402
+from routing_agent.agent import DEFAULT_THRESHOLD, build_graph, called_tools  # noqa: E402
+from routing_agent.dataset import assert_split_disjoint, gold_eval_turns  # noqa: E402
+from routing_agent.grader import failure_reason, grade_turn, summarize  # noqa: E402
+from routing_agent.llm_backends import backend_of, make_llm  # noqa: E402
+from routing_agent.prompts import route_guide  # noqa: E402
+from routing_agent.schemas import ROUTE_LIST, RouteDecision  # noqa: E402
 
 RUNS = BASE / "runs"
 
@@ -46,7 +47,7 @@ def run_routing(llm, concurrency: int, limit: int | None, rule_only: bool = Fals
     started = time.monotonic()
     if rule_only:
         # LLM 없이 도는 기준선. LLM 성적을 이 수치와 견줘야 "나아졌다"고 말할 수 있다.
-        from src.prompts import rule_route
+        from routing_agent.prompts import rule_route
 
         outputs = [RouteDecision(route=rule_route(r["question"]), confidence=0.0, reason="규칙 기반") for r in rows]
     else:

@@ -25,11 +25,11 @@ from langchain_core.messages import AIMessage, ToolMessage
 from langgraph.graph import END, START, StateGraph, add_messages
 from langgraph.prebuilt import ToolNode
 
-from src import prompts
-from src.context import build_context, select_units
-from src.llm_backends import BackendError, backend_of, make_llm
-from src.schemas import AnswerPlan, RouteDecision
-from src.tools import ALL_TOOLS, tool_menu, tools_for
+from routing_agent import prompts
+from routing_agent.context import build_context, select_units
+from routing_agent.llm_backends import BackendError, backend_of, make_llm
+from routing_agent.schemas import AnswerPlan, RouteDecision
+from routing_agent.tools import ALL_TOOLS, tool_menu, tools_for
 
 # sweep 으로 정했다 (평가 24턴, gpt-4o-mini): 0.6→도구 0.875, 0.5→0.917,
 # 0.4→1.000, 0.3→1.000. 0.3 과 0.4 가 같으므로 더 보수적인 쪽을 택한다.
@@ -253,7 +253,7 @@ def build_graph(
 
     # ------------------------------------------------------------ 6/6 검증
     def verify(state: AgentState) -> dict:
-        from src.guardrail import check_guardrail
+        from routing_agent.guardrail import check_guardrail
 
         verdict = check_guardrail(
             answer=state.get("answer", ""),
@@ -328,9 +328,9 @@ def _main() -> int:
 
     from dotenv import load_dotenv
 
-    from src import record
+    from routing_agent import record
 
-    load_dotenv(BASE_ENV := (__import__("pathlib").Path(__file__).resolve().parent.parent / ".env"))
+    load_dotenv(BASE_ENV := (__import__("pathlib").Path(__file__).resolve().parents[2] / ".env"))
     _ = BASE_ENV
 
     parser = argparse.ArgumentParser(description="라우팅 에이전트 한 건 실행")
@@ -344,7 +344,7 @@ def _main() -> int:
 
     if args.mermaid:
         # 구조도는 그래프 모양만 그린다. 백엔드가 하나도 없어도 나와야 한다.
-        from src.llm_backends import ReplayChat
+        from routing_agent.llm_backends import ReplayChat
 
         print(build_graph(llm=ReplayChat()).get_graph().draw_mermaid())
         return 0

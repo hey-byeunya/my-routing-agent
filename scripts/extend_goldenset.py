@@ -15,13 +15,11 @@
 from __future__ import annotations
 
 import json
-import sys
 from collections import Counter
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from src.schemas import ROUTE_LIST  # noqa: E402
+from routing_agent.schemas import ROUTE_LIST
 
 PATH = Path(__file__).resolve().parent.parent / "data" / "answer_goldenset.json"
 

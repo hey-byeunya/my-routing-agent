@@ -1,9 +1,3 @@
-langchain>=1.4,<2
-langchain-core>=1.6,<2
-langchain-openai>=1.6,<2
-langgraph>=1.2,<2
-pydantic>=2.13,<3
-python-dotenv>=1.0
-pandas>=2.2
-scikit-learn>=1.5
-streamlit>=1.40
+# 의존성의 출처는 pyproject.toml 한 곳이다. 두 군데 적으면 반드시 어긋난다.
+# 이 파일은 `pip install -r requirements.txt` 를 습관적으로 치는 사람을 위한 통로다.
+-e .

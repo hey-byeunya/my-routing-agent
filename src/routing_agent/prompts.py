@@ -8,8 +8,8 @@ from __future__ import annotations
 
 import re
 
-from src.dataset import fewshot_examples, gold_fewshot_turns
-from src.schemas import ROUTE_LABELS
+from routing_agent.dataset import fewshot_examples, gold_fewshot_turns
+from routing_agent.schemas import ROUTE_LABELS
 
 # ---------------------------------------------------------------- 분류
 

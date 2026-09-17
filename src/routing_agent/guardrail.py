@@ -74,7 +74,7 @@ def _main() -> None:
         ("작은 수 무시", "1~3문장으로 안내드립니다. 2kg 기준입니다.", [], True),
         ("근거 문서에서 찾음", "기본 운임은 3,900원입니다.", [], True),
     ]
-    from src.context import build_context
+    from routing_agent.context import build_context
 
     context = build_context("VISIT_PICKUP")
     ok = True

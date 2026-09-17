@@ -18,8 +18,16 @@ if [ ! -x "$PY" ]; then
   echo "▸ .venv 가 없다. 만든다 (한 번만)"
   python3 -m venv .venv
   .venv/bin/pip install -q --upgrade pip
-  .venv/bin/pip install -q -r requirements.txt
+  # -e 로 깐다. src-layout 이라 설치하지 않으면 routing_agent 를 import 할 수 없고,
+  # -e 면 소스를 고쳐도 다시 깔 필요가 없다.
+  .venv/bin/pip install -q -e .
   echo "▸ 설치 완료"
+fi
+
+# 소스만 받아 온 경우(이미 .venv 는 있는데 패키지가 안 깔린 경우)도 받아 준다.
+if ! $PY -c "import routing_agent" 2>/dev/null; then
+  echo "▸ routing_agent 패키지를 설치한다"
+  .venv/bin/pip install -q -e .
 fi
 
 if [ ! -f .env ]; then
@@ -63,9 +71,9 @@ case "$cmd" in
     echo
     $PY scripts/check_grader.py
     ;;
-  ask)   shift; exec $PY -m src.agent "$@" ;;
-  dry)   shift; exec $PY -m src.agent --dry-run "$@" ;;
-  eval)  shift; exec $PY -m src.evaluate --task answer "$@" ;;
+  ask)   shift; exec $PY -m routing_agent.agent "$@" ;;
+  dry)   shift; exec $PY -m routing_agent.agent --dry-run "$@" ;;
+  eval)  shift; exec $PY -m routing_agent.evaluate --task answer "$@" ;;
   table) exec $PY scripts/report_table.py ;;
   *)
     echo "모르는 명령: $cmd"
