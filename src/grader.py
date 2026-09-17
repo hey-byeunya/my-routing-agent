@@ -33,6 +33,19 @@ JUDGE_PROMPT = """\
 
 담겼으면 yes, 아니면 no. 다른 말은 쓰지 마라."""
 
+FORBID_PROMPT = """\
+아래 상담 답변이 금지된 내용을 **사실로 주장**하고 있는지만 판단해라.
+그 내용을 부정하거나("~가 아니라", "~하지 않습니다") 바로잡는 문장은 주장이 아니다.
+
+[답변]
+{answer}
+
+[금지된 내용]
+{item}
+
+주장하고 있으면 y, 아니면 n 한 글자만 출력해라.
+"""
+
 ASK_PROMPT = """\
 아래 상담 답변이 특정 항목을 고객에게 되묻고 있는지만 판단해라. 표현이 달라도 같은 항목을 물었으면 그렇다.
 
@@ -120,7 +133,15 @@ def grade_turn(
             continue
         missing.append(str(fact))
 
-    violated = [str(f) for f in expect.get("forbid", []) if _contains(answer, str(f))]
+    # 금지 항목도 2단이다. 문자열로 잡혀도 부정문일 수 있다 — "제일 긴 쪽 기준이
+    # 아니라 세 변의 합"은 금지 내용을 바로잡은 것이지 주장한 것이 아니다.
+    violated = []
+    for item in expect.get("forbid", []):
+        if not _contains(answer, str(item)):
+            continue
+        if llm is not None and not _ask_llm(llm, FORBID_PROMPT.format(answer=answer, item=item)):
+            continue
+        violated.append(str(item))
 
     unasked: list[str] = []
     if expect.get("action") == "ASK":
