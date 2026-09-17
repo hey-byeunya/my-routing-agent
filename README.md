@@ -1,4 +1,4 @@
-# 택배중계 고객응대 라우팅 에이전트
+# 택배중계 고객센터 에이전트
 
 고객 문의 하나를 받아 **카테고리를 판정하고 → 그 카테고리의 근거만 모아 → 필요하면 조회 도구를 부르고 → 근거만으로 답하고 → 근거 없는 수치가 섞였는지 검사한다.** 확신이 서지 않으면 답을 지어내지 않고 담당자에게 넘긴다.
 
@@ -22,7 +22,7 @@ graph TD;
 
 ---
 
-## 사전 요구사항
+## 환경 요구사항
 
 | 항목 | 실측값 | 비고 |
 | --- | --- | --- |
@@ -30,7 +30,7 @@ graph TD;
 | 유료 키 | 없어도 된다 | `claude` / `opencode` / `ollama` 는 키를 쓰지 않는다 |
 | 디스크 | 수십 MB | `runs/cache/` 에 LLM 응답을 캐시한다 |
 
-## 설치부터 첫 실행까지
+## 이용 방법
 
 ```bash
 ./run.sh check                  # 이 한 줄이면 .venv·설치·.env 까지 알아서 한다
@@ -48,7 +48,7 @@ python -m routing_agent.agent --dry-run "제주도인데 배송비 더 붙나요
 
 `--dry-run` 은 LLM 을 부르지 않고 **어떤 카테고리로 가서 어떤 근거 절이 프롬프트에 들어가는지**까지만 보여 준다. 키가 하나도 없어도 여기까지는 반드시 돈다. 기록(`store/metrics.jsonl`)도 남기지 않는다 — 구경용 실행이 수치에 섞이면 안 되기 때문이다.
 
-## 백엔드 네 갈래 + 재생 모드
+## 백엔드와 재생모드
 
 `AGENT_BACKEND` 하나로 갈아끼운다. 코드는 어느 백엔드인지 모르는 채로 돈다.
 
@@ -75,7 +75,7 @@ python -m routing_agent.agent --backend replay "편의점택배 접수하면 언
 
 요청한 백엔드를 쓸 수 없으면 `replay` 로 떨어지고, 그 사유를 한 줄 출력한다. 파이프라인 안에서도 마찬가지다: 판정이 실패하면 규칙 기반으로, 답변이 실패하면 이관 문구로 떨어지되 **폴백으로 돌았다는 사실을 결과에 남긴다**(`fallback`, `fallback_error`).
 
-## 점검 명령
+## 점검 항목
 
 앞 단계가 통과해야 뒤 수치를 믿는다.
 
@@ -89,7 +89,7 @@ python -m routing_agent.llm_backends --smoke --backend all   # ⑤ 백엔드가 
 
 ①~③ 이 통과하기 전의 성능 수치는 믿지 않는다. ③ 이 떨어지면 에이전트가 아니라 **채점기나 정답셋이 틀린 것이다.**
 
-## 평가
+## 평가 점검
 
 ```bash
 python -m routing_agent.evaluate --task routing --backend claude --name routing_v3 \
@@ -103,7 +103,7 @@ python scripts/report_table.py           # 회차별 종합 기록표 (REPORT.md
 
 `--round` 부터의 다섯 옵션은 **왜·무엇을 바꿨는지를 수치와 같은 줄에 남긴다.** 나중에 손으로 표를 쓰면 수치와 설명이 따로 놀기 때문에, `store/metrics.jsonl` 한 벌만 진실로 둔다.
 
-## 데모
+## 데모 실행
 
 ```bash
 streamlit run app.py
@@ -142,7 +142,7 @@ python -m routing_agent.evaluate --task answer --backend openai --name answer_20
 
 `store/metrics.jsonl` 은 지우지 않고 쌓으므로, 개정 전후 수치가 한 표에 남는다(`./run.sh table`).
 
-## 자주 막히는 지점
+## 막힐 때는 이렇게
 
 | 증상 | 1순위 원인 |
 | --- | --- |
@@ -168,7 +168,7 @@ python -m routing_agent.evaluate --task answer --backend openai --name answer_20
 
 의존성은 `pyproject.toml` 한 곳에만 적는다. `requirements.txt` 는 `-e .` 한 줄짜리 통로다 — 두 군데 적으면 반드시 어긋난다.
 
-## 구조 한눈에
+## 구조표
 
 | 파일 | 하는 일 |
 | --- | --- |

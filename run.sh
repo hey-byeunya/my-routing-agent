@@ -48,6 +48,20 @@ fi
 cmd="${1:-demo}"
 case "$cmd" in
   demo)
+    # 포트가 막혀 있으면 Streamlit 은 "Port 8601 is not available" 한 줄만 남기고
+    # 조용히 끝난다. 누가 잡고 있는지까지 알려 준다 — 대개 앞서 띄운 서버다.
+    holder=$(lsof -tiTCP:8601 -sTCP:LISTEN 2>/dev/null | head -1 || true)
+    if [ -n "$holder" ]; then
+      echo "⚠ 8601 포트를 PID $holder 가 쓰고 있다."
+      if ps -p "$holder" -o command= 2>/dev/null | grep -q "app.py"; then
+        echo "  앞서 띄운 이 프로젝트의 데모다. 그 터미널에서 Ctrl+C 하거나:  kill $holder"
+        echo "  (코드를 고쳤다면 반드시 새로 띄워야 반영된다)"
+      else
+        echo "  다른 프로그램이다. 그쪽을 끄거나 PORT 를 바꿔 띄운다:"
+        echo "    .venv/bin/streamlit run app.py --server.port 8602"
+      fi
+      exit 1
+    fi
     echo "▸ 데모를 띄운다 → http://localhost:8601"
     echo "  URL 로도 된다: 'http://localhost:8601/?q=제주도인데 배송비 더 붙나요?&run=1'"
     echo "  멈추려면 Ctrl+C"
