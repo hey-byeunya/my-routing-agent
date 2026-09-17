@@ -3,6 +3,11 @@
 # headless=true 면 이메일 프롬프트가 뜨지 않는다. 대신 브라우저를 자동으로
 # 열지 않으므로 run.sh 가 대신 열어 준다.
 
+[client]
+# 화면 오른쪽 위의 개발용 툴바(File change · Rerun · Always rerun)를 숨긴다.
+# 채점자에게도 고객에게도 쓸 데가 없고, 고객용 화면에서는 특히 눈에 거슬린다.
+toolbarMode = "minimal"
+
 [browser]
 gatherUsageStats = false
 

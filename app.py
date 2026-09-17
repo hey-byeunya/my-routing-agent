@@ -289,3 +289,81 @@ with st.container(key="composer"):
 if typed:
     st.session_state["pending"] = typed
     st.rerun()
+
+
+# ---------------------------------------------------------------- 고객용 화면
+
+# 지금까지의 화면은 **채점자·개발자용**이다. 파이프라인 단계, 백엔드·확신도 배지,
+# 근거 절과 도구 호출을 일부러 다 펼친다 — "이 답이 어디서 나왔는지 보인다"가
+# 그 화면의 목적이기 때문이다.
+#
+# 그런데 고객에게 내보낼 화면은 그 반대다. 고객은 확신도가 0.90 인지 알 필요가
+# 없고, 카테고리가 RESERVE_GENERAL 인지는 더더욱 알 필요가 없다. 답만 보면 된다.
+# 그래서 같은 대화를 **답변만** 보여 주는 모달로 한 겹 더 띄운다.
+#
+# 대화 상태(turns)는 두 화면이 함께 쓴다. 모달에서 물어도 같은 대화가 이어지고,
+# 닫으면 개발자 화면에서 그 턴의 경로를 그대로 되짚을 수 있다.
+st.markdown(
+    """
+    <style>
+      /* 떠 있는 상담 버튼. 오른쪽 아래 구석에 고정한다. */
+      .st-key-customer_fab {
+        position: fixed; right: 28px; bottom: 96px; z-index: 1000;
+        width: auto;
+      }
+      .st-key-customer_fab .stButton button {
+        border-radius: 999px; padding: 0.55rem 1.1rem;
+        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
+        border: none;
+        background: var(--primary-color, rgb(255, 75, 75));
+        color: rgb(255, 255, 255);
+      }
+      .st-key-customer_fab .stButton button:hover { filter: brightness(0.93); }
+      /* 모달 안에서는 대화만 보이게 한다. */
+      .st-key-customer_thread { max-height: 52vh; overflow-y: auto; }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
+
+@st.dialog("상담 도우미", width="large")
+def customer_chat() -> None:
+    """고객이 볼 화면. 답변만 있고 내부 판정은 하나도 드러내지 않는다."""
+    thread: list[dict] = st.session_state.get("turns", [])
+
+    with st.container(key="customer_thread"):
+        if not thread:
+            st.chat_message("assistant").write(
+                "안녕하세요. 택배 예약·배송·취소와 관련해 궁금하신 점을 말씀해 주세요."
+            )
+        for past in thread:
+            st.chat_message("user").write(past["question"])
+            st.chat_message("assistant").write(past["answer"])
+
+    asked = st.chat_input("무엇을 도와드릴까요?", key="customer_input")
+
+    left, right = st.columns([1, 1])
+    if left.button("새 상담", use_container_width=True, disabled=not thread, key="customer_reset"):
+        st.session_state["turns"] = []
+        st.session_state.pop("pending", None)
+        st.rerun()
+    if right.button("닫기", use_container_width=True, key="customer_close"):
+        st.session_state["customer_open"] = False
+        st.rerun()
+
+    if asked:
+        # 처리는 본문이 한다. 모달은 결과를 보여 주기만 한다 — 두 화면이 같은
+        # 파이프라인을 타야 "고객이 본 답"과 "채점자가 되짚는 경로"가 같아진다.
+        st.session_state["pending"] = asked
+        st.rerun()
+
+
+with st.container(key="customer_fab"):
+    if st.button("💬 고객용 화면", help="고객에게 보이는 상담 화면을 띄운다"):
+        st.session_state["customer_open"] = True
+        st.rerun()
+
+# 대화를 다 그린 **뒤에** 연다. 그래야 방금 받은 답변이 모달에도 들어간다.
+if st.session_state.get("customer_open"):
+    customer_chat()
