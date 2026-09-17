@@ -48,6 +48,11 @@ MIN_MARGIN = 0.15
 # 정책 §0 원칙1 이 "값을 모를 때 쓸 문장"으로 정해 둔 것을 그대로 쓴다.
 UNVERIFIED_ANSWER_TEXT = "정확한 운임을 확인해 드리겠습니다. 잠시만 기다려 주세요."
 
+# 같은 말을 두 번 해도 대화가 안 풀리면 사람에게 넘긴다 (§10.2 의 취지).
+REPEAT_ESCALATE_TEXT = (
+    "같은 안내를 반복해 드려 죄송합니다. 정확한 확인을 위해 담당자에게 연결해 드리겠습니다."
+)
+
 ESCALATE_FALLBACK_TEXT = (
     "죄송합니다. 문의하신 내용을 정확히 확인하기 어려워 담당자에게 연결해 드리겠습니다."
 )
@@ -341,10 +346,46 @@ def build_graph(
 
     # ------------------------------------------------------------ 6/6 검증
     def verify(state: AgentState) -> dict:
-        from routing_agent.guardrail import check_guardrail
+        from routing_agent.guardrail import check_guardrail, is_repeat_answer
 
+        # 앞 턴과 똑같은 말을 다시 내보내려 하면 대화가 제자리를 돈다. 고객은
+        # 답을 못 받았는데 우리는 답했다고 여긴다. 프롬프트로 막아 보려 했으나
+        # 듣지 않아(#36) 파이썬이 센다.
+        rewritten: str | None = None
+        if is_repeat_answer(state.get("answer", ""), state.get("history")):
+            log("6/6 검증", "앞 턴과 같은 답 — 다시 쓴다")
+            retry = prompts.answer_prompt(
+                route=state["route"],
+                context=state["context"],
+                action=state.get("action", "ANSWER"),
+                ask=state.get("ask", []),
+                tool_results=_tool_results_text(state.get("messages", [])),
+                history=_history_text(state.get("history")),
+                question=state["question"],
+                avoid_repeat=state.get("answer", ""),
+            )
+            try:
+                again = str(llm.invoke(retry).content).strip()
+            except Exception:  # noqa: BLE001
+                again = ""
+            if again and not is_repeat_answer(again, state.get("history")):
+                # verify 는 돌려준 키만 상태에 반영된다. 지역 변수만 바꾸면
+                # 다시 쓴 답이 그대로 버려진다 (실제로 그렇게 새어 나갔다).
+                rewritten = again
+            else:
+                # 두 번 말해도 같은 말이면 우리가 풀 수 있는 자리가 아니다(§10.2).
+                log("6/6 검증", "다시 써도 같은 말 — 이관한다")
+                return {
+                    "answer": REPEAT_ESCALATE_TEXT,
+                    "action": "ESCALATE",
+                    "verdict": {"ok": True, "unsupported": [], "repeated": True},
+                    "fallback": "repeat",
+                    "trace": _note(state, "verify", ok=True, repeated=True),
+                }
+
+        answer_text = rewritten if rewritten is not None else state.get("answer", "")
         verdict = check_guardrail(
-            answer=state.get("answer", ""),
+            answer=answer_text,
             tool_results=[m.content for m in state.get("messages", []) if isinstance(m, ToolMessage)],
             context=state.get("context", ""),
             # 고객이 직접 말한 수는 근거가 있는 수다. 예약번호를 되읽어 주는 것을
@@ -353,13 +394,18 @@ def build_graph(
         )
         if verdict["ok"]:
             log("6/6 검증", "통과")
-            return {"verdict": verdict, "trace": _note(state, "verify", ok=True)}
+            out: dict = {"verdict": verdict, "trace": _note(state, "verify", ok=True)}
+            if rewritten is not None:
+                out["answer"] = rewritten
+            return out
 
         # 잡았으면 막는다. 표시만 하고 내보내면 가드레일이 없는 것과 같다 —
         # 고객은 배지를 보지 않고 답변을 본다. 정책 §10.3 이 금지한 "매뉴얼에도
         # 화면에도 없는 수치를 만들어 안내하는 것"이 그대로 일어난다.
         bad = verdict["unsupported"]
-        log("6/6 검증", f"근거 없는 수치 {bad} — 답변을 내보내지 않는다")
+        bad_claims = verdict.get("unsupported_claims") or []
+        log("6/6 검증",
+            f"근거 없는 수치 {bad} · 단정 {bad_claims} — 답변을 내보내지 않는다")
 
         # 한 번은 그 수치를 빼고 다시 쓰게 해 본다. 근거는 그대로 주므로
         # 답할 수 있는 만큼은 답하게 된다.
@@ -372,6 +418,7 @@ def build_graph(
             history=_history_text(state.get("history")),
             question=state["question"],
             forbid_numbers=bad,
+            forbid_claims=bad_claims,
         )
         try:
             retried = str(llm.invoke(retry_prompt).content).strip()

@@ -229,6 +229,8 @@ def answer_prompt(
     history: str,
     question: str,
     forbid_numbers: list | None = None,
+    forbid_claims: list | None = None,
+    avoid_repeat: str | None = None,
 ) -> str:
     parts = [
         ANSWER_RULES,
@@ -244,6 +246,20 @@ def answer_prompt(
         parts.append(f"[조회 결과]\n{tool_results or '(조회하지 않음)'}")
     if history:
         parts.append(f"[이전 대화]\n{history}")
+    if avoid_repeat:
+        parts.append(
+            "[다시 쓰기]\n앞 턴에서 이미 이렇게 말했다:\n"
+            f'"{avoid_repeat}"\n'
+            "같은 말을 되풀이하면 고객은 답을 못 받은 것이다. 다른 길로 안내해라 — "
+            "앞서 물은 것을 또 묻지 말고, 고객이 방금 한 말에 맞춰 다음 단계를 알려 준다."
+        )
+    if forbid_claims:
+        words = ", ".join(str(w) for w in forbid_claims)
+        parts.append(
+            f"[다시 쓰기]\n앞서 쓴 답변이 근거에 없는 것을 두고 가능·불가를 단정했다: {words}\n"
+            "근거 문서에도 조회 결과에도 그런 규정이 없다. 된다·안 된다를 말하지 말고, "
+            "무엇을 말씀하시는지 되묻거나 확인해서 안내하겠다고 해라."
+        )
     if forbid_numbers:
         # 검증에서 걸린 수치를 이름 붙여 돌려준다. "근거만 쓰라"고 다시 말하는 것보다
         # 무엇이 틀렸는지 짚어 주는 편이 고쳐질 확률이 높다.

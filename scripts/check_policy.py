@@ -95,6 +95,33 @@ def main() -> int:
     check("차단 시 문구가 매뉴얼 §0 원칙1 에 있는 문장이다",
           UNVERIFIED_ANSWER_TEXT in policy, UNVERIFIED_ANSWER_TEXT)
 
+    # ── 근거 없는 것을 두고 가능·불가를 단정하지 않는가 (§10.3)
+    print("\n[근거 없는 단정]")
+    from routing_agent.guardrail import unsupported_claims
+
+    ctx_rg = build_context("RESERVE_GENERAL")
+    check("근거에 없는 것을 단정하면 잡는다", unsupported_claims("드론은 배송 가능합니다.", ctx_rg) == ["드론"])
+    check("근거에 있는 것은 잡지 않는다",
+          not unsupported_claims("개인 회원도 방문택배를 이용하실 수 있습니다.", ctx_rg))
+    check("고객이 말했다는 것만으로는 근거가 아니다",
+          unsupported_claims("드론은 배송 가능합니다.", ctx_rg, said="드론 되나요?") == ["드론"])
+    check("가드레일 판정에 반영된다",
+          not check_guardrail("드론은 배송 가능합니다.", [], ctx_rg)["ok"])
+
+    # ── 같은 말을 되풀이하지 않는가 (§10.2 의 취지)
+    print("\n[되풀이]")
+    from routing_agent.guardrail import is_repeat_answer
+
+    said = "어떤 예약을 말씀하시는 건가요? 확인 후 안내드리겠습니다."
+    hist = [("customer", "사과 되나요?", "RESERVE_GENERAL"), ("agent", said, "RESERVE_GENERAL")]
+    check("앞 턴과 같은 말을 잡는다", is_repeat_answer(said, hist))
+    check("문장부호만 다른 것도 잡는다", is_repeat_answer(said.replace("?", "!"), hist))
+    check("다른 안내는 잡지 않는다",
+          not is_repeat_answer("예약번호를 알려주시면 확인해 드리겠습니다.", hist))
+    check("이력이 없으면 잡지 않는다", not is_repeat_answer(said, []))
+    check("고객 발화와 같은 것은 잡지 않는다",
+          not is_repeat_answer("사과 되나요?", hist))
+
     # ── 할 수 없는 일을 약속하지 않는가 (§2 — 예약은 고객이 예약 화면에서 한다)
     print("\n[할 수 없는 일]")
     from routing_agent.prompts import ANSWER_RULES, PLAN_RULES

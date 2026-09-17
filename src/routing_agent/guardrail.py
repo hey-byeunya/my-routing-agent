@@ -31,6 +31,49 @@ def _numbers(text: str) -> list[int]:
     return out
 
 
+# ---------------------------------------------------------------- 근거 없는 단정
+
+# "X 는 ~ 가능합니다" 처럼 **무엇에 대해 가능·불가를 단정하는** 문장을 찾는다.
+# 주어 자리의 낱말이 근거 어디에도 없으면, 우리는 모르는 것을 두고 규정을 만든 것이다.
+_CLAIM = re.compile(
+    r"([가-힣A-Za-z0-9]{2,})(?:은|는|이|가)\s*[^.!?]{0,40}?"
+    r"(가능합니다|불가합니다|불가능합니다|됩니다|안\s?됩니다|할\s?수\s?있습니다|할\s?수\s?없습니다)"
+)
+
+# 서술어·부사처럼 주어로 볼 수 없는 것들. 이 낱말이 주어 자리에 잡히면 흘린다.
+_NOT_SUBJECT = {
+    "이용", "확인", "안내", "조회", "문의", "신청", "접수", "발송", "배송", "예약",
+    "취소", "변경", "결제", "사용", "처리", "출력", "등록", "수거", "이것", "그것",
+    "저희", "고객", "해당", "경우", "이후", "이전", "지금", "현재", "특정", "조건",
+}
+
+
+def unsupported_claims(answer: str, context: str = "", tool_results: list[str] | None = None,
+                       said: str = "") -> list[str]:
+    """근거에 없는 것을 두고 가능·불가를 단정했는가.
+
+    가드레일이 숫자만 보는 탓에 `"사과는 예약 취소 후에 가능합니다"` 같은
+    **없는 규정**이 그대로 나갔다(#36). 정책 §10.3 이 금지한 것의 절반이 이쪽인데
+    검사가 없었다. 숫자와 같은 방식으로 — 근거에 있으면 통과, 없으면 잡는다.
+
+    고객이 말한 낱말이라는 것만으로는 근거가 되지 않는다. 고객이 "사과" 라고 했다고
+    사과에 대한 규정이 생기지는 않기 때문이다. 그래서 `said` 는 근거로 세지 않는다.
+    """
+    grounded = (context or "") + "\n" + "\n".join(str(t) for t in (tool_results or []))
+    out: list[str] = []
+    for subject, _verb in _CLAIM.findall(answer or ""):
+        word = subject.strip()
+        if len(word) < 2 or word in _NOT_SUBJECT or word.isdigit():
+            continue
+        if word in grounded:
+            continue
+        # 앞 두 글자만 걸쳐도 근거에 있는 말로 본다 ("편의점택배" vs "편의점")
+        if len(word) >= 3 and word[:2] in grounded:
+            continue
+        out.append(word)
+    return sorted(set(out))
+
+
 def check_guardrail(answer: str, tool_results: list[str], context: str = "", said: str = "") -> dict:
     """근거에서 찾을 수 없는 큰 수를 골라낸다.
 
@@ -67,9 +110,14 @@ def check_guardrail(answer: str, tool_results: list[str], context: str = "", sai
             continue
         unsupported.append(value)
 
+    # 숫자만 보면 "X 는 ~ 가능합니다" 같은 **말로 하는 단정**이 그대로 나간다.
+    # 같은 방식으로 본다 — 근거에 있으면 통과, 없으면 잡는다.
+    claims = unsupported_claims(answer, context, tool_results)
+
     return {
-        "ok": not unsupported,
+        "ok": not unsupported and not claims,
         "unsupported": sorted(set(unsupported)),
+        "unsupported_claims": claims,
         "checked_min": MIN_AMOUNT,
         "grounded_count": len(grounded),
     }
@@ -100,3 +148,41 @@ def _main() -> None:
 
 if __name__ == "__main__":
     _main()
+
+
+# ---------------------------------------------------------------- 되풀이 검사
+
+_PUNCT = re.compile(r"[^0-9A-Za-z가-힣]+")
+
+
+def _shape(text: str) -> str:
+    """문장부호·공백을 걷어낸 뼈대. 같은 말인지 비교할 때만 쓴다."""
+    return _PUNCT.sub("", text or "")
+
+
+def is_repeat_answer(answer: str, history: list | None, threshold: float = 0.9) -> bool:
+    """직전에 우리가 한 말을 그대로 되풀이하려는가.
+
+    "예약 한 거 없는데?" 라고 했는데 앞 턴과 **똑같은 문장**을 다시 내보내면
+    대화가 제자리를 돈다. 고객은 답을 못 받았는데 우리는 답했다고 여긴다.
+
+    프롬프트로 "되풀이하지 마라" 고 적어 봤지만 듣지 않았다(#36). 모델에게
+    부탁하는 대신 파이썬이 센다 — 이 프로젝트가 판정은 LLM, 셈과 임계값은
+    파이썬으로 가르는 것과 같은 자리다.
+    """
+    if not answer or not history:
+        return False
+    previous = [item[1] for item in history if item and item[0] == "agent" and len(item) > 1]
+    if not previous:
+        return False
+    now = _shape(answer)
+    if not now:
+        return False
+    last = _shape(previous[-1])
+    if not last:
+        return False
+    # 짧은 쪽이 긴 쪽에 통째로 들어가면 같은 말로 본다. 꼬리만 붙인 경우를 잡는다.
+    short, long_ = (now, last) if len(now) <= len(last) else (last, now)
+    if short and short in long_ and len(short) / len(long_) >= threshold:
+        return True
+    return now == last
