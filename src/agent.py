@@ -321,7 +321,10 @@ def _main() -> int:
     args = parser.parse_args()
 
     if args.mermaid:
-        print(build_graph(llm=make_llm("replay", quiet=True)).get_graph().draw_mermaid())
+        # 구조도는 그래프 모양만 그린다. 백엔드가 하나도 없어도 나와야 한다.
+        from src.llm_backends import ReplayChat
+
+        print(build_graph(llm=ReplayChat()).get_graph().draw_mermaid())
         return 0
 
     if args.dry_run:

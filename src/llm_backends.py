@@ -207,6 +207,12 @@ class SubprocessChatModel(BaseChatModel):
 
         text, meta = self._call_cli(prompt)
 
+        # AGENT_RECORD_REPLAY=1 이면 이 호출을 replay 녹화본에 적는다. 녹음 지점은
+        # 여기여야 한다 — replay 가 찾는 키가 바로 이 prompt 문자열이기 때문이다.
+        # 캐시 파일에서 역산하면 키가 어긋난다 (캐시는 직렬화된 메시지로 키를 만든다).
+        if os.environ.get("AGENT_RECORD_REPLAY") == "1" and self._llm_type != "replay":
+            record_replay(prompt, text)
+
         if not specs:
             message = AIMessage(content=text, response_metadata=meta)
             return ChatResult(generations=[ChatGeneration(message=message)])

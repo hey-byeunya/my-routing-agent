@@ -1,0 +1,8 @@
+{
+  "$comment": "replay 백엔드용 녹화 응답. 키 없는 환경에서 데모·평가를 돌리기 위한 것이며 진짜 모델 호출이 아니다.",
+  "responses": {
+    "6b26ba7ca7289515": "{\n  \"route\": \"CVS_PICKUP\",\n  \"confidence\": 0.9,\n  \"reason\": \"문의가 편의점택배(CVS_PICKUP) 접수와 수거 시점에 대한 질문으로, 편의점 브랜드 및 접수 오류와 직접적인 관련이 있음\"\n}",
+    "9412789292f43862": "{\n  \"action\": \"ASK\",\n  \"tools\": [],\n  \"ask\": [\"편의점 브랜드\", \"지역(도서·제주 여부)\", \"예약번호\"]\n}",
+    "c80b24ab0560262e": "The user is asking me to the user."
+  }
+}
