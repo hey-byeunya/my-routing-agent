@@ -1,0 +1,773 @@
+{
+  "$comment": "택배중계서비스 답변 정답셋 (멀티턴) v1.0 — 교육용. 업체명·서비스명 없이 policy_courierhub.md + mockdata_courierhub.json 만으로 정답이 결정되는 대화를 저작했다. 원본 FAQ 페이지의 실제 발화 패턴을 참고했으나, 대화 자체와 조회 결과 값(예약 상태 등)은 모두 합성이다.",
+  "version": "1.0",
+  "as_of_date": "2026-09-16",
+  "provenance": "합성",
+  "grounding": [
+    "policy_courierhub.md v1.0",
+    "mockdata_courierhub.json v1.0"
+  ],
+  "schema": {
+    "action": {
+      "ASK": "식별자·조건이 부족해 되물어야 함. 서비스·택배사·규격을 단정하면 실패.",
+      "ANSWER": "툴 조회 후 답변. tools 를 모두 호출하고 must 를 모두 포함해야 통과.",
+      "CONFIRM": "고객 동의가 필요한 처리. 동의 없이 진행하면 실패.",
+      "OUT_OF_SCOPE": "응대 범위 밖. 해당 채널/부서 안내로 종료.",
+      "ESCALATE": "상담원 이관. escalate_to_agent 호출 필요."
+    },
+    "must": "답변에 반드시 포함되어야 하는 사실. 숫자는 콤마 유무 무관하게 비교한다.",
+    "forbid": "답변에 나타나면 실패하는 문자열. 주로 조회 전 단정한 수치나 임의 확답.",
+    "must_ask": "되물어야 하는 항목."
+  },
+  "conversations": [
+    {
+      "conv_id": "C-001",
+      "title": "택배비 문의 → 서비스·택배사·규격 특정 → 운임 안내",
+      "route": "VISIT_PICKUP",
+      "pattern": "식별자요청",
+      "tests": [
+        "🔧 운임 조회 강제",
+        "택배사별 구간 차이"
+      ],
+      "turns": [
+        {
+          "turn": 1,
+          "role": "customer",
+          "text": "택배비가 얼마인가요?"
+        },
+        {
+          "turn": 2,
+          "role": "agent",
+          "expect": {
+            "action": "ASK",
+            "tools": [],
+            "must_ask": [
+              "이용하실 서비스(방문택배/편의점택배/다량할인택배 등)",
+              "택배사",
+              "박스 크기와 중량"
+            ],
+            "must": [],
+            "forbid": [
+              "3800",
+              "3,800원"
+            ],
+            "rubric": "서비스·택배사·규격을 모르면 운임을 특정할 수 없다. 임의 금액을 먼저 제시하면 실패.",
+            "reference": "이용하실 서비스와 택배사, 박스 크기·중량을 알려주시면 정확한 운임을 확인해 드리겠습니다."
+          }
+        },
+        {
+          "turn": 3,
+          "role": "customer",
+          "text": "롯데택배로 방문택배 보낼 건데 2kg에 60cm 이하예요."
+        },
+        {
+          "turn": 4,
+          "role": "agent",
+          "expect": {
+            "action": "ANSWER",
+            "tools": [
+              "get_visit_rate"
+            ],
+            "tool_args": {
+              "get_visit_rate": {
+                "carrier": "롯데택배",
+                "weight_kg": 2,
+                "size_cm": 60
+              }
+            },
+            "must": [
+              "3800"
+            ],
+            "forbid": [],
+            "rubric": "mockdata_courierhub.json carriers.visit_pickup.롯데택배 tiers[0].fee=3800 을 그대로 사용.",
+            "reference": "롯데택배 방문택배 기준 2kg·60cm 이하 구간은 3,800원입니다. 제주는 3,000원, 도서지역은 5,000원의 추가운임이 붙습니다."
+          }
+        }
+      ],
+      "route_original": "VISIT_PICKUP"
+    },
+    {
+      "conv_id": "C-002",
+      "title": "제주도 배송 → 지역할증 안내",
+      "route": "VISIT_PICKUP",
+      "pattern": "지역할증",
+      "tests": [
+        "기본운임 + 지역할증 합산 안내"
+      ],
+      "turns": [
+        {
+          "turn": 1,
+          "role": "customer",
+          "text": "제주도로 방문택배 보내려는데 얼마나 더 드나요?"
+        },
+        {
+          "turn": 2,
+          "role": "agent",
+          "expect": {
+            "action": "ASK",
+            "tools": [],
+            "must_ask": [
+              "택배사",
+              "박스 크기와 중량"
+            ],
+            "must": [],
+            "forbid": [],
+            "rubric": "택배사·규격 없이 제주 할증만 답할 수 없다.",
+            "reference": "이용하실 택배사와 박스 크기·중량을 알려주시면 기본 운임과 제주 추가운임을 함께 확인해 드리겠습니다."
+          }
+        },
+        {
+          "turn": 3,
+          "role": "customer",
+          "text": "한진택배로 5kg에 80cm 이하예요."
+        },
+        {
+          "turn": 4,
+          "role": "agent",
+          "expect": {
+            "action": "ANSWER",
+            "tools": [
+              "get_visit_rate"
+            ],
+            "tool_args": {
+              "get_visit_rate": {
+                "carrier": "한진택배",
+                "weight_kg": 5,
+                "size_cm": 80,
+                "region": "제주"
+              }
+            },
+            "must": [
+              "4500",
+              "3000"
+            ],
+            "forbid": [
+              "5000원 추가"
+            ],
+            "rubric": "한진택배 5kg/80cm 기본운임 4,500원 + 제주 추가운임 3,000원(도서 추가운임 5,000원과 혼동 금지).",
+            "reference": "한진택배 5kg·80cm 이하 기본 운임은 4,500원이며, 제주 지역은 3,000원이 추가되어 총 7,500원입니다. 도서지역은 5,000원이 추가됩니다."
+          }
+        }
+      ],
+      "route_original": "VISIT_PICKUP"
+    },
+    {
+      "conv_id": "C-003",
+      "title": "방문택배 vs 편의점택배 추천",
+      "route": "CVS_PICKUP",
+      "pattern": "서비스추천",
+      "tests": [
+        "운반 어려움 → 방문택배 추천"
+      ],
+      "turns": [
+        {
+          "turn": 1,
+          "role": "customer",
+          "text": "짐이 무거운데 편의점까지 들고 가기 힘들어요. 뭐가 나을까요?"
+        },
+        {
+          "turn": 2,
+          "role": "agent",
+          "expect": {
+            "action": "ANSWER",
+            "tools": [],
+            "must": [
+              "방문택배"
+            ],
+            "forbid": [],
+            "rubric": "정책 §1.1 표: 물품을 직접 운반하기 어려우면 방문택배 권장.",
+            "reference": "직접 운반이 어려우시면 기사님이 방문해 수거해 가는 방문택배를 추천드립니다."
+          }
+        }
+      ],
+      "route_original": "CVS_PICKUP"
+    },
+    {
+      "conv_id": "C-004",
+      "title": "다량할인택배 최소수량 확인 → 구간 운임 안내",
+      "route": "BIZ_BULK",
+      "pattern": "식별자요청",
+      "tests": [
+        "🔧 규격 조회 강제",
+        "10박스 이상 구간 적용"
+      ],
+      "turns": [
+        {
+          "turn": 1,
+          "role": "customer",
+          "text": "박스 12개 보내려는데 제일 싸게 되는 방법이 뭔가요?"
+        },
+        {
+          "turn": 2,
+          "role": "agent",
+          "expect": {
+            "action": "ASK",
+            "tools": [],
+            "must_ask": [
+              "박스 개당 크기와 중량",
+              "선호하는 택배사(없으면 상관없음으로 확인)"
+            ],
+            "must": [],
+            "forbid": [
+              "2990"
+            ],
+            "rubric": "10박스 이상 구간은 2kg/80cm 이하 조건에서만 2,990원이 적용된다. 규격 확인 없이 금액을 먼저 말하면 실패.",
+            "reference": "박스 개당 크기와 중량을 알려주시면 12박스 발송에 적용되는 가장 유리한 구간을 확인해 드리겠습니다."
+          }
+        },
+        {
+          "turn": 3,
+          "role": "customer",
+          "text": "택배사는 상관없고 박스당 2kg에 80cm 이하예요."
+        },
+        {
+          "turn": 4,
+          "role": "agent",
+          "expect": {
+            "action": "ANSWER",
+            "tools": [
+              "get_bulk_rate"
+            ],
+            "tool_args": {
+              "get_bulk_rate": {
+                "box_count": 12,
+                "weight_kg": 2,
+                "size_cm": 80
+              }
+            },
+            "must": [
+              "2990"
+            ],
+            "forbid": [],
+            "rubric": "한진택배-10박스이상, CJ대한통운-10박스이상 모두 2kg/80cm 이하 2,990원 구간(mockdata bulk_discount).",
+            "reference": "12박스 발송이시면 10박스 이상 구간이 적용되어, 한진택배·CJ대한통운 모두 2kg·80cm 이하 기준 2,990원입니다. 제주·도서지역은 택배사별 추가운임이 다르니 발송 지역을 알려주시면 정확히 안내드리겠습니다."
+          }
+        }
+      ],
+      "route_original": "BULK_DISCOUNT"
+    },
+    {
+      "conv_id": "C-005",
+      "title": "소호사업자택배 운임 문의 → 비공개 수치 임의 안내 금지",
+      "route": "BIZ_BULK",
+      "pattern": "확인후안내",
+      "tests": [
+        "🔧 미공개 수치 날조 금지"
+      ],
+      "turns": [
+        {
+          "turn": 1,
+          "role": "customer",
+          "text": "사업자택배 운임이 정확히 얼마인지 알려주세요."
+        },
+        {
+          "turn": 2,
+          "role": "agent",
+          "expect": {
+            "action": "ANSWER",
+            "tools": [],
+            "must": [
+              "발송량"
+            ],
+            "forbid": [
+              "원입니다",
+              "원이에요"
+            ],
+            "rubric": "소호사업자택배 운임 구간은 FAQ·매뉴얼에 구체적 금액이 없다(정책 §4.4, mockdata biz_account.rate_note). 숫자를 지어내면 실패.",
+            "reference": "사업자택배 운임은 전월 발송량에 따라 구간이 달라집니다. 정확한 구간과 금액은 신청·이용 화면에서 확인해 안내드리겠습니다."
+          }
+        }
+      ],
+      "route_original": "BIZ_ACCOUNT"
+    },
+    {
+      "conv_id": "C-006",
+      "title": "방문택배 미방문 문의 → 예약 조회 후 안내",
+      "route": "VISIT_PICKUP",
+      "pattern": "조회후안내",
+      "tests": [
+        "🔧 예약 상태 조회 강제",
+        "일반 절차 답변 금지"
+      ],
+      "turns": [
+        {
+          "turn": 1,
+          "role": "customer",
+          "text": "어제 방문 예약했는데 기사님이 안 오셨어요. 예약번호는 R-88213이에요.",
+          "sentiment": "negative"
+        },
+        {
+          "turn": 2,
+          "role": "agent",
+          "expect": {
+            "action": "ANSWER",
+            "tools": [
+              "get_reservation_status"
+            ],
+            "tool_args": {
+              "get_reservation_status": {
+                "reservation_id": "R-88213"
+              }
+            },
+            "must": [
+              "오늘"
+            ],
+            "forbid": [
+              "환불 처리했습니다",
+              "보통 1~2일 내 진행됩니다"
+            ],
+            "rubric": "정책 §0 원칙2: 미방문 문의는 일반 절차로 답하지 않고 반드시 예약을 조회한 뒤 현재 상태+다음 안내를 제공한다. 조회 결과(합성): 어제 집하 지연, 오늘 재방문 예정.",
+            "reference": "확인해 보니 어제 집하가 지연되어 오늘 재방문 예정으로 등록되어 있습니다. 오늘 안으로 다시 방문 예정이며, 그래도 안 되면 다시 연락 주세요."
+          }
+        }
+      ],
+      "route_original": "VISIT_PICKUP"
+    },
+    {
+      "conv_id": "C-007",
+      "title": "배송조회 안 됨 → 수거 전 상태 확인",
+      "route": "SPEC_SHIPPING",
+      "pattern": "조회후안내",
+      "tests": [
+        "운송장 발급 ≠ 조회 가능"
+      ],
+      "turns": [
+        {
+          "turn": 1,
+          "role": "customer",
+          "text": "운송장번호 123456789인데 배송조회가 안 돼요."
+        },
+        {
+          "turn": 2,
+          "role": "agent",
+          "expect": {
+            "action": "ANSWER",
+            "tools": [
+              "get_tracking_status"
+            ],
+            "tool_args": {
+              "get_tracking_status": {
+                "tracking_number": "123456789"
+              }
+            },
+            "must": [
+              "수거"
+            ],
+            "forbid": [
+              "시스템 오류입니다"
+            ],
+            "rubric": "정책 §5.2: 운송장 발급 후에도 수거·전산 등록 전에는 조회되지 않을 수 있다. 조회 결과(합성): 아직 수거 전.",
+            "reference": "확인해 보니 아직 택배사가 수거하기 전 상태입니다. 수거 후 전산에 등록되면 조회가 가능하며, 그 이후에도 안 뜨면 다시 문의해 주세요."
+          }
+        }
+      ],
+      "route_original": "SPEC_SHIPPING"
+    },
+    {
+      "conv_id": "C-008",
+      "title": "예약번호 vs 운송장번호 개념 문의",
+      "route": "SPEC_SHIPPING",
+      "pattern": "개념설명",
+      "tests": [
+        "두 번호 개념 구분"
+      ],
+      "turns": [
+        {
+          "turn": 1,
+          "role": "customer",
+          "text": "예약번호랑 운송장번호가 같은 거예요?"
+        },
+        {
+          "turn": 2,
+          "role": "agent",
+          "expect": {
+            "action": "ANSWER",
+            "tools": [],
+            "must": [
+              "예약번호",
+              "운송장번호"
+            ],
+            "forbid": [],
+            "rubric": "mockdata id_glossary 정의를 그대로 반영.",
+            "reference": "예약번호는 예약을 접수할 때 생성되는 번호이고, 운송장번호는 택배사가 수거·배송 관리를 위해 발급하는 번호로 서로 다릅니다."
+          }
+        }
+      ],
+      "route_original": "SPEC_SHIPPING"
+    },
+    {
+      "conv_id": "C-009",
+      "title": "예약 취소 요청 → 상태 확인 → 동의 후 처리",
+      "route": "SPEC_SHIPPING",
+      "pattern": "동의확인",
+      "tests": [
+        "🔧 동의 없이 취소 처리 금지"
+      ],
+      "turns": [
+        {
+          "turn": 1,
+          "role": "customer",
+          "text": "방금 예약한 거 취소하고 싶어요."
+        },
+        {
+          "turn": 2,
+          "role": "agent",
+          "expect": {
+            "action": "ASK",
+            "tools": [],
+            "must_ask": [
+              "예약번호"
+            ],
+            "must": [],
+            "forbid": [
+              "취소 처리해 드렸습니다"
+            ],
+            "rubric": "예약번호 없이 취소를 진행하면 안 된다.",
+            "reference": "취소하실 예약번호를 알려주시겠어요?"
+          }
+        },
+        {
+          "turn": 3,
+          "role": "customer",
+          "text": "예약번호는 R-90410이에요."
+        },
+        {
+          "turn": 4,
+          "role": "agent",
+          "expect": {
+            "action": "CONFIRM",
+            "tools": [
+              "get_reservation_status"
+            ],
+            "tool_args": {
+              "get_reservation_status": {
+                "reservation_id": "R-90410"
+              }
+            },
+            "must": [
+              "취소"
+            ],
+            "forbid": [
+              "취소 처리해 드렸습니다",
+              "취소 완료"
+            ],
+            "rubric": "정책 §6: 택배사 접수 전이면 취소 가능하나 고객 동의를 받은 뒤 진행해야 한다(무단 처리 금지). 조회 결과(합성): 택배사 접수 전.",
+            "reference": "아직 택배사 접수 전 상태라 취소가 가능합니다. 지금 취소 진행해 드려도 괜찮으실까요?"
+          }
+        },
+        {
+          "turn": 5,
+          "role": "customer",
+          "text": "네, 취소해주세요."
+        },
+        {
+          "turn": 6,
+          "role": "agent",
+          "expect": {
+            "action": "ANSWER",
+            "tools": [],
+            "must": [
+              "취소"
+            ],
+            "forbid": [],
+            "rubric": "동의를 받은 뒤에만 취소 완료로 안내한다.",
+            "reference": "예약을 취소 처리해 드렸습니다. 다시 이용하실 때는 새로 예약해 주세요."
+          }
+        }
+      ],
+      "route_original": "SPEC_SHIPPING"
+    },
+    {
+      "conv_id": "C-010",
+      "title": "반입 제한 물품 문의",
+      "route": "SPEC_SHIPPING",
+      "pattern": "정책안내",
+      "tests": [
+        "택배사 기준에 따라 갈리는 항목 단정 금지"
+      ],
+      "turns": [
+        {
+          "turn": 1,
+          "role": "customer",
+          "text": "향수인데 액체류도 택배로 보낼 수 있나요?"
+        },
+        {
+          "turn": 2,
+          "role": "agent",
+          "expect": {
+            "action": "ANSWER",
+            "tools": [],
+            "must": [
+              "택배사"
+            ],
+            "forbid": [
+              "무조건 보낼 수 있습니다",
+              "액체류는 전부 금지됩니다"
+            ],
+            "rubric": "mockdata restricted_items.restricted_by_carrier: 액체류는 택배사 기준에 따라 제한 여부가 갈린다. 전면 허용/금지로 단정하면 실패.",
+            "reference": "액체류는 접수 자체가 금지된 품목은 아니지만 택배사 기준에 따라 제한 여부가 달라집니다. 이용하실 택배사를 확인해 안내드리겠습니다."
+          }
+        }
+      ],
+      "route_original": "SPEC_SHIPPING"
+    },
+    {
+      "conv_id": "C-011",
+      "title": "쇼핑몰 주문 미수집 → 확인 절차 안내 → 반복 불만 시 이관",
+      "route": "BIZ_BULK",
+      "pattern": "에스컬레이션",
+      "tests": [
+        "🔧 원인 점검 순서 준수",
+        "반복 문의 감지"
+      ],
+      "turns": [
+        {
+          "turn": 1,
+          "role": "customer",
+          "text": "스마트스토어 연동했는데 주문이 하나도 안 들어와요.",
+          "sentiment": "negative"
+        },
+        {
+          "turn": 2,
+          "role": "agent",
+          "expect": {
+            "action": "ASK",
+            "tools": [],
+            "must_ask": [
+              "연동 시점",
+              "확인하려는 주문의 발생 시각"
+            ],
+            "must": [],
+            "forbid": [],
+            "rubric": "정책 §8.1: 연동 시점 이후 발생한 결제완료 주문만 수집 대상이므로 시점 확인이 먼저다.",
+            "reference": "연동하신 시점과 확인하시려는 주문이 발생한 시각을 알려주시겠어요?"
+          }
+        },
+        {
+          "turn": 3,
+          "role": "customer",
+          "text": "어제 오후에 연동했고, 오늘 아침에 들어온 주문이 안 보여요."
+        },
+        {
+          "turn": 4,
+          "role": "agent",
+          "expect": {
+            "action": "ANSWER",
+            "tools": [],
+            "must": [
+              "연동",
+              "수집"
+            ],
+            "forbid": [],
+            "rubric": "연동 이후 결제완료 주문만 수집되므로, 우선 주문 불러오기 재실행을 안내한다.",
+            "reference": "연동 시점 이후 발생한 결제완료 주문만 수집됩니다. 오늘 아침 주문이 맞다면 주문 불러오기를 다시 실행해 보시고, 그래도 안 보이면 쇼핑몰명과 주문번호를 알려주세요."
+          }
+        },
+        {
+          "turn": 5,
+          "role": "customer",
+          "text": "다시 해봐도 그대로예요. 이거 벌써 두 번째로 문의하는 거예요.",
+          "sentiment": "negative"
+        },
+        {
+          "turn": 6,
+          "role": "agent",
+          "expect": {
+            "action": "ESCALATE",
+            "tools": [
+              "escalate_to_agent"
+            ],
+            "tool_args": {
+              "escalate_to_agent": {
+                "reason": "연동오류_반복문의",
+                "summary": "스마트스토어 주문연동 후 결제완료 주문 미수집. 재실행 안내에도 미해결, 2회째 문의.",
+                "sentiment": "negative"
+              }
+            },
+            "must": [
+              "담당자"
+            ],
+            "forbid": [
+              "곧 해결됩니다",
+              "조금만 기다려"
+            ],
+            "rubric": "정책 §10.2: 쇼핑몰 연동 오류가 반복 안내 후에도 지속되면 기술 지원으로 이관한다.",
+            "reference": "반복해서 불편을 드려 죄송합니다. 정확한 원인 확인을 위해 담당자에게 연결해 드리겠습니다."
+          }
+        }
+      ],
+      "route_original": "ORDER_SYNC"
+    },
+    {
+      "conv_id": "C-012",
+      "title": "편의점 예약 조회 불가 → 브랜드 불일치 확인 → 반복 시 이관",
+      "route": "CVS_PICKUP",
+      "pattern": "에스컬레이션",
+      "tests": [
+        "🔧 예약 조회로 원인(브랜드 불일치) 특정",
+        "반복 문의 시 이관"
+      ],
+      "turns": [
+        {
+          "turn": 1,
+          "role": "customer",
+          "text": "편의점에서 제 예약번호가 계속 조회가 안 된다고 해요. 예약번호는 R-77120이에요.",
+          "sentiment": "negative"
+        },
+        {
+          "turn": 2,
+          "role": "agent",
+          "expect": {
+            "action": "ANSWER",
+            "tools": [
+              "get_reservation_status"
+            ],
+            "tool_args": {
+              "get_reservation_status": {
+                "reservation_id": "R-77120"
+              }
+            },
+            "must": [
+              "GS"
+            ],
+            "forbid": [
+              "시스템 오류입니다"
+            ],
+            "rubric": "정책 §5.3: 브랜드 불일치가 조회 불가의 흔한 원인이다. 조회 결과(합성): GS편의점택배로 예약되어 있으나 고객은 CU 매장 방문.",
+            "reference": "확인해 보니 예약이 GS편의점택배로 되어 있어 CU 매장에서는 조회되지 않습니다. GS 매장에서 접수해 주시면 정상적으로 조회됩니다."
+          }
+        },
+        {
+          "turn": 3,
+          "role": "customer",
+          "text": "아까도 GS 매장 갔는데 안 됐어요. 이번이 세 번째예요.",
+          "sentiment": "negative"
+        },
+        {
+          "turn": 4,
+          "role": "agent",
+          "expect": {
+            "action": "ESCALATE",
+            "tools": [
+              "escalate_to_agent"
+            ],
+            "tool_args": {
+              "escalate_to_agent": {
+                "reason": "반복문의",
+                "summary": "GS편의점택배 예약 R-77120, GS 매장에서도 조회 불가로 3회째 반복 문의.",
+                "sentiment": "negative"
+              }
+            },
+            "must": [
+              "담당자"
+            ],
+            "forbid": [],
+            "rubric": "정책 §10.2: 동일 사안 3회 이상 반복 문의는 즉시 이관 대상.",
+            "reference": "같은 문제로 계속 불편을 드려 죄송합니다. 정확한 확인을 위해 담당자에게 바로 연결해 드리겠습니다."
+          }
+        }
+      ],
+      "route_original": "CVS_PICKUP"
+    },
+    {
+      "conv_id": "C-013",
+      "title": "오프라인 매장 문의 → 응대 범위 밖",
+      "route": "OTHER",
+      "pattern": "범위밖",
+      "tests": [
+        "온라인 전용 서비스임을 명확히 안내"
+      ],
+      "turns": [
+        {
+          "turn": 1,
+          "role": "customer",
+          "text": "매장이 어디 있나요? 직접 가서 물어보고 싶어요."
+        },
+        {
+          "turn": 2,
+          "role": "agent",
+          "expect": {
+            "action": "OUT_OF_SCOPE",
+            "tools": [],
+            "must": [
+              "온라인"
+            ],
+            "forbid": [
+              "매장 주소는"
+            ],
+            "rubric": "정책 §10.1: 오프라인 매장 자체가 없다. 주소를 지어내면 실패.",
+            "reference": "이 서비스는 온라인 전용으로 운영되어 오프라인 매장이 없습니다. 문의사항은 채팅 상담이나 1:1 문의로 도와드리겠습니다."
+          }
+        }
+      ],
+      "route_original": "OTHER"
+    },
+    {
+      "conv_id": "C-014",
+      "title": "타 채널 배송사고 문의 → 응대 범위 밖 + 병행 확인",
+      "route": "OTHER",
+      "pattern": "범위밖",
+      "tests": [
+        "택배사 사고 처리는 범위 밖이나 병행 확인 안내"
+      ],
+      "turns": [
+        {
+          "turn": 1,
+          "role": "customer",
+          "text": "택배기사가 물건을 파손했는데 여기서 보상해주나요?"
+        },
+        {
+          "turn": 2,
+          "role": "agent",
+          "expect": {
+            "action": "OUT_OF_SCOPE",
+            "tools": [],
+            "must": [
+              "택배사"
+            ],
+            "forbid": [
+              "보상해 드리겠습니다",
+              "전액 환불"
+            ],
+            "rubric": "정책 §10.1: 택배사 내부 배송사고는 택배사 문의 안내와 병행 확인 대상. 보상을 임의로 약속하면 실패.",
+            "reference": "택배 파손은 발송에 이용하신 택배사 확인이 우선 필요한 사항입니다. 택배사 고객센터로 문의해 주시고, 필요한 부분은 저희도 함께 확인해 드리겠습니다."
+          }
+        }
+      ],
+      "route_original": "OTHER"
+    },
+    {
+      "conv_id": "C-015",
+      "title": "다중 의도 문의 → 각각 특정 정보 요청",
+      "route": "RESERVE_GENERAL",
+      "pattern": "다중의도분리",
+      "tests": [
+        "두 문의를 하나로 뭉뚱그려 답하지 않는다"
+      ],
+      "turns": [
+        {
+          "turn": 1,
+          "role": "customer",
+          "text": "요금도 궁금하고 취소하는 법도 알려주세요."
+        },
+        {
+          "turn": 2,
+          "role": "agent",
+          "expect": {
+            "action": "ASK",
+            "tools": [],
+            "must_ask": [
+              "요금 문의: 이용하실 서비스와 택배사",
+              "취소 문의: 예약번호"
+            ],
+            "must": [],
+            "forbid": [],
+            "rubric": "요금 문의와 취소 문의는 서로 다른 식별자가 필요한 별개 요청이다. 하나로 뭉뚱그려 일반 답변만 하면 실패.",
+            "reference": "요금은 이용하실 서비스와 택배사를, 취소는 예약번호를 알려주시면 각각 확인해 안내드리겠습니다."
+          }
+        }
+      ],
+      "route_original": "RESERVE_GENERAL"
+    }
+  ]
+}

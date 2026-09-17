@@ -1,0 +1,291 @@
+{
+  "$comment": "택배중계서비스 목 데이터 v1.0 — 교육용. 특정 업체명·서비스명은 포함하지 않으며, 공개된 FAQ 페이지에 게시된 운임·정책 스냅샷을 일반화해 정리했다. 에이전트 툴이 조회해 반환하는 값으로 사용한다. 소호사업자택배의 월별 운임구간처럼 FAQ에 구체적 수치가 없는 항목은 실제 값을 만들어내지 않고 '어드민/제휴사 조회 필요'로 표시했다.",
+  "version": "1.0",
+  "as_of_date": "2026-09-16",
+  "source_note": "운임은 공개 FAQ에 게시된 스냅샷이며 실제 예약 화면의 최종 운임과 다를 수 있다. 프로모션·택배사 정책 변경으로 수시로 바뀌므로, 상담 시에는 이 값을 참고만 하고 예약 화면(또는 연동 API)의 현재 값을 우선한다.",
+
+  "services": {
+    "RESERVE_GENERAL": {
+      "label": "택배예약 공통 안내",
+      "description": "방문택배·편의점택배·다량할인택배·소호사업자택배 중 발송 조건에 맞는 서비스를 비교·예약하는 진입 단계.",
+      "reservation_steps": [
+        "로그인",
+        "서비스 선택(방문택배·편의점택배·다량할인택배 등)",
+        "이용할 택배사 선택",
+        "보내는 사람·받는 사람 정보 입력",
+        "물품 크기·중량·수량 선택",
+        "이용약관 동의",
+        "방문수거일 또는 접수방법 확인",
+        "예약내역 확인",
+        "최종 운임 확인 및 결제",
+        "예약현황에서 예약정보·배송상태 확인"
+      ],
+      "personal_use_allowed": true,
+      "note": "개인회원도 방문택배·편의점택배·다량할인택배를 이용할 수 있다. 사업자 인증이 필요한 서비스는 소호사업자택배뿐이다."
+    },
+    "VISIT_PICKUP": {
+      "label": "방문택배",
+      "description": "기사가 지정 주소로 방문해 포장이 끝난 물품을 수거하는 서비스.",
+      "min_boxes": 1,
+      "note": "상품별 이용조건을 충족하면 한 박스부터 예약 가능. 방문 희망일은 수거 '요청일'이며 지역 집하 일정·물량에 따라 실제 방문일이 달라질 수 있어 정확한 시각은 지정하기 어렵다."
+    },
+    "CVS_PICKUP": {
+      "label": "편의점택배",
+      "description": "예약 후 이용 가능한 편의점 점포에 물품을 직접 가져가 접수하는 서비스.",
+      "note": "편의점 방문 전 포장을 완료해야 한다. 방문택배와의 선택 기준은 '기사 방문수거 필요 여부'와 '직접 접수 가능 여부'."
+    },
+    "BULK_DISCOUNT": {
+      "label": "다량할인택배",
+      "description": "여러 박스를 한꺼번에 발송할 때 이용하는 서비스. 최소 예약 수량은 택배사·상품마다 다르다(예: 3박스 이상, 10박스 이상).",
+      "personal_use_allowed": true,
+      "note": "사업자가 아니어도 상품별 최소 수량·규격 조건을 충족하면 이용 가능. 박스마다 실제 크기·중량이 다르면 각각 정확히 등록해야 하며, 규격 초과 시 추가운임 또는 수거 제한이 발생할 수 있다."
+    },
+    "BIZ_ACCOUNT": {
+      "label": "소호사업자택배",
+      "description": "온라인 판매자·소규모 사업자가 사업자용 택배 조건으로 신청·이용하는 서비스.",
+      "application_steps": [
+        "이용할 택배사 선택",
+        "사업자 인증 및 신청정보 입력",
+        "집하주소 등록",
+        "간편결제서비스 등록",
+        "신청 완료",
+        "택배사 승인 후 이용"
+      ],
+      "requirements": ["사업자 인증", "고정 집하주소", "간편결제서비스 등록"],
+      "rate_note": "전월 발송량 기준으로 다음 달 운임 구간이 달라질 수 있다는 사실만 FAQ에 명시되어 있고, 구체적 구간·금액은 공개되어 있지 않다. 실제 서비스에서는 이 값을 임의로 만들지 말고 택배사별 신청/이용 화면 또는 어드민 조회로 확인해야 한다."
+    },
+    "ORDER_SYNC": {
+      "label": "쇼핑몰 주문연동 관리",
+      "description": "온라인 쇼핑몰의 주문정보를 불러와 택배예약·출고 업무에 연결하는 셀러용 자동화 기능.",
+      "supported_malls_named_in_faq": ["스마트스토어", "쿠팡"],
+      "supported_malls_note": "FAQ 원문은 '스마트스토어와 쿠팡 등'으로 표현되어 있어, 이 두 곳 외 추가 지원 쇼핑몰이 있을 수 있다. 정확한 현재 지원 목록은 '지원 쇼핑몰·기능 현황' 페이지(어드민 조회 대상)에서 확인해야 한다.",
+      "tasks": ["주문 확인", "출고신청", "택배예약", "운송장번호 전송"],
+      "tasks_note": "반품수집, 합포장 등 세부 기능은 쇼핑몰·연동 방식에 따라 지원 범위가 다르다."
+    }
+  },
+
+  "carriers": {
+    "visit_pickup": {
+      "롯데택배": {
+        "tiers": [
+          { "max_weight_kg": 2, "max_size_cm": 60, "fee": 3800 },
+          { "max_weight_kg": 5, "max_size_cm": 80, "fee": 4200 },
+          { "max_weight_kg": 20, "max_size_cm": 140, "fee": 4950 },
+          { "max_weight_kg": 20, "max_size_cm": 160, "fee": 5950 }
+        ],
+        "jeju_surcharge": 3000,
+        "island_surcharge": 5000
+      },
+      "한진택배": {
+        "tiers": [
+          { "max_weight_kg": 2, "max_size_cm": 60, "fee": 3900 },
+          { "max_weight_kg": 5, "max_size_cm": 80, "fee": 4500 },
+          { "max_weight_kg": 15, "max_size_cm": 140, "fee": 5000 },
+          { "max_weight_kg": 20, "max_size_cm": 160, "fee": 6500 }
+        ],
+        "jeju_surcharge": 3000,
+        "island_surcharge": 5000
+      },
+      "CJ대한통운": {
+        "tiers": [
+          { "max_weight_kg": 5, "max_size_cm": 80, "fee": 4300 },
+          { "max_weight_kg": 15, "max_size_cm": 120, "fee": 5000 },
+          { "max_weight_kg": 20, "max_size_cm": 160, "fee": 5990 },
+          { "max_weight_kg": 25, "max_size_cm": 190, "fee": 15000 }
+        ],
+        "jeju_surcharge": 4000,
+        "island_surcharge": 7000
+      },
+      "우체국택배": {
+        "tiers": [
+          { "max_weight_kg": 5, "max_size_cm": 80, "fee": 5000 }
+        ],
+        "jeju_surcharge": null,
+        "island_surcharge": null,
+        "note": "FAQ에는 5kg/80cm 이하 구간만 공개되어 있다. 다른 구간·지역 할증은 예약 화면에서 확인 필요."
+      }
+    },
+    "bulk_discount": {
+      "한진택배-3박스이상": {
+        "min_boxes": 3,
+        "tiers": [
+          { "max_weight_kg": 2, "max_size_cm": 60, "fee": 3200 },
+          { "max_weight_kg": 5, "max_size_cm": 80, "fee": 3400 },
+          { "max_weight_kg": 10, "max_size_cm": 100, "fee": 3600 },
+          { "max_weight_kg": 15, "max_size_cm": 120, "fee": 3900 }
+        ],
+        "jeju_surcharge": 3000,
+        "island_surcharge": 5000
+      },
+      "한진택배-10박스이상": {
+        "min_boxes": 10,
+        "tiers": [
+          { "max_weight_kg": 2, "max_size_cm": 80, "fee": 2990 }
+        ],
+        "jeju_surcharge": 3000,
+        "island_surcharge": 5000
+      },
+      "롯데택배": {
+        "min_boxes": null,
+        "tiers": [
+          { "max_weight_kg": 2, "max_size_cm": 60, "fee": 3000 },
+          { "max_weight_kg": 5, "max_size_cm": 80, "fee": 3400 },
+          { "max_weight_kg": 10, "max_size_cm": 100, "fee": 3600 },
+          { "max_weight_kg": 15, "max_size_cm": 120, "fee": 4000 }
+        ],
+        "jeju_surcharge": 3000,
+        "island_surcharge": 5000
+      },
+      "CJ대한통운-3박스이상": {
+        "min_boxes": 3,
+        "tiers": [
+          { "max_weight_kg": 3, "max_size_cm": 80, "fee": 3150 },
+          { "max_weight_kg": 5, "max_size_cm": 100, "fee": 3400 },
+          { "max_weight_kg": 10, "max_size_cm": 120, "fee": 3900 },
+          { "max_weight_kg": 15, "max_size_cm": 140, "fee": 5500 }
+        ],
+        "jeju_surcharge": 4000,
+        "island_surcharge": 7000
+      },
+      "CJ대한통운-10박스이상": {
+        "min_boxes": 10,
+        "tiers": [
+          { "max_weight_kg": 2, "max_size_cm": 80, "fee": 2990 }
+        ],
+        "jeju_surcharge": 4000,
+        "island_surcharge": 7000
+      },
+      "오늘픽업": {
+        "note": "당일 방문수거형 다량 상품. FAQ 원문 표기 그대로 옮김.",
+        "min_boxes": null,
+        "tiers": [
+          { "max_weight_kg": 2, "max_size_cm": 60, "min_boxes": 10, "fee": 2890 },
+          { "max_weight_kg": 2, "max_size_cm": 60, "min_boxes": 3, "fee": 2980 }
+        ],
+        "jeju_surcharge": 4000,
+        "island_surcharge": 4000
+      },
+      "오늘도착": {
+        "note": "당일 도착형 다량 상품. FAQ 원문 표기 그대로 옮김. 지역 할증 정보는 공개되어 있지 않음.",
+        "min_boxes": null,
+        "tiers": [
+          { "max_weight_kg": 2, "max_size_cm": 60, "min_boxes": 10, "fee": 3400 },
+          { "max_weight_kg": 2, "max_size_cm": 60, "min_boxes": 3, "fee": 4400 }
+        ],
+        "jeju_surcharge": null,
+        "island_surcharge": null
+      }
+    },
+    "cvs_pickup": {
+      "CU편의점택배": {
+        "tiers": [
+          { "max_weight_kg": 0.5, "max_size_cm": 80, "fee": 3100 },
+          { "max_weight_kg": 2, "max_size_cm": 80, "fee": 3490 },
+          { "max_weight_kg": 5, "max_size_cm": 80, "fee": 3750 },
+          { "max_weight_kg": 20, "max_size_cm": 140, "fee": 4200 }
+        ],
+        "jeju_surcharge": 3000,
+        "island_available": false
+      },
+      "GS편의점택배": {
+        "tiers": [
+          { "max_weight_kg": 0.5, "max_size_cm": 80, "fee": 3100 },
+          { "max_weight_kg": 2, "max_size_cm": 80, "fee": 3490 },
+          { "max_weight_kg": 5, "max_size_cm": 80, "fee": 3750 },
+          { "max_weight_kg": 20, "max_size_cm": 140, "fee": 4600 }
+        ],
+        "jeju_available": false,
+        "island_available": false
+      },
+      "이마트24편의점택배": {
+        "tiers": [
+          { "max_weight_kg": 0.5, "max_size_cm": 80, "fee": 3100 },
+          { "max_weight_kg": 2, "max_size_cm": 80, "fee": 3490 },
+          { "max_weight_kg": 5, "max_size_cm": 80, "fee": 3750 },
+          { "max_weight_kg": 20, "max_size_cm": 140, "fee": 4200 }
+        ],
+        "jeju_surcharge": 3000,
+        "island_availability_note": "FAQ에 도서지역 관련 내용이 없어 미기재로 둔다. 확인 후 안내."
+      },
+      "세븐일레븐 편의점택배": {
+        "tiers": [
+          { "max_weight_kg": 20, "max_size_cm": 160, "zone": "동일권", "fee": 3070 },
+          { "max_weight_kg": 20, "max_size_cm": 160, "zone": "타권", "fee": 3470 }
+        ],
+        "jeju_surcharge": 3000,
+        "island_availability_note": "FAQ에 도서지역 관련 내용이 없어 미기재로 둔다. 확인 후 안내."
+      },
+      "GS25 반값택배": {
+        "tiers": [
+          { "max_weight_kg": 5, "max_size_cm": 80, "fee": 2400 }
+        ],
+        "jeju_available": false,
+        "island_available": false
+      },
+      "CU반값택배": {
+        "tiers": [
+          { "max_weight_kg": 0.5, "max_size_cm": 80, "fee": 1800 },
+          { "max_weight_kg": 1, "max_size_cm": 80, "fee": 2100 },
+          { "max_weight_kg": 5, "max_size_cm": 80, "fee": 2700 }
+        ],
+        "jeju_available": false,
+        "island_available": false
+      },
+      "세븐일레븐 착한택배": {
+        "tiers": [
+          { "max_weight_kg": 5, "max_size_cm": 80, "fee": 1800 }
+        ],
+        "jeju_surcharge": null,
+        "island_availability_note": "FAQ에 지역 할증 관련 내용이 없어 미기재로 둔다. 확인 후 안내."
+      }
+    }
+  },
+
+  "box_size_rule": {
+    "method": "포장 완료 상태에서 가로·세로·높이를 각각 측정한 뒤 세 변의 길이를 합산한다.",
+    "example": "가로 40cm, 세로 30cm, 높이 20cm → 세 변 합 90cm",
+    "warning": "실제 물품이 예약한 크기·중량을 초과하면 추가운임이 발생하거나 수거가 제한될 수 있다. 반드시 포장 완료 후 측정한 값으로 예약해야 한다."
+  },
+
+  "restricted_items": {
+    "prohibited": ["현금", "유가증권", "위험물", "폭발물", "살아 있는 동식물", "부패하기 쉬운 물품", "법령상 운송이 금지된 물품"],
+    "restricted_by_carrier": ["고가품", "액체류", "파손 위험이 큰 물품"],
+    "note": "restricted_by_carrier 항목은 택배사 기준에 따라 접수 가능 여부가 달라진다. 발송 전 선택한 택배사의 취급 제한 기준을 확인해야 한다."
+  },
+
+  "id_glossary": {
+    "reservation_number": "택배중계 플랫폼에서 예약을 접수할 때 생성되는 번호.",
+    "tracking_number": "택배사가 물품의 수거·배송을 관리하기 위해 발급하는 번호. 예약번호와는 다른 번호이며, 수거·전산 등록 전에는 배송조회가 되지 않을 수 있다."
+  },
+
+  "cancel_change_rule": {
+    "before_carrier_accept": "택배사 접수 전에는 예약 상태에 따라 취소하거나 다시 예약할 수 있다.",
+    "after_tracking_issued": "운송장이 발급됐거나 수거가 진행된 뒤에는 취소·주소 변경이 제한될 수 있다.",
+    "note": "정확한 가능 여부는 예약현황의 현재 상태를 조회해야 한다."
+  },
+
+  "today_orders_troubleshoot": {
+    "orders_not_collected": {
+      "checks": ["쇼핑몰 계정 연동 상태", "API 인증정보 유효 여부", "연동 시점 이후 발생한 주문인지", "주문이 수집 대상 상태(결제완료)인지", "주문 불러오기 재실행 결과"],
+      "escalation_data_needed": ["쇼핑몰명", "주문번호", "주문 발생일시"]
+    },
+    "tracking_not_registered": {
+      "checks": ["운송장번호 정상 발급 여부", "쇼핑몰 주문연동을 통한 접수 여부", "운송장 전송 가능 상태 여부(방문택배: 집하 상태 / 편의점택배: 운송장출력 상태)"],
+      "escalation_data_needed": ["쇼핑몰명", "주문번호", "운송장번호"]
+    }
+  },
+
+  "cvs_vs_visit_guide": {
+    "table": [
+      { "situation": "기사 방문수거가 필요함", "recommended": "VISIT_PICKUP" },
+      { "situation": "편의점에서 직접 접수할 수 있음", "recommended": "CVS_PICKUP" },
+      { "situation": "물품을 직접 운반하기 어려움", "recommended": "VISIT_PICKUP" },
+      { "situation": "기사 방문일을 기다리기 어려움", "recommended": "CVS_PICKUP" }
+    ]
+  },
+
+  "out_of_scope": {
+    "examples": ["오프라인 매장 위치·운영시간 문의", "타 채널(오픈마켓 등)에서 발생한 주문/결제 자체에 대한 처리", "입점·채용·세금계산서 발행 부서 연락처 등 일반 상담 범위 밖 행정 문의"],
+    "standard_reply": "해당 문의는 저희가 도와드리기 어려운 부분입니다. 관련 부서 또는 채널로 문의해 주셔야 확인이 가능합니다."
+  }
+}

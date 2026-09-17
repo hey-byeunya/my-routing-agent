@@ -1,0 +1,9 @@
+langchain>=1.4,<2
+langchain-core>=1.6,<2
+langchain-openai>=1.6,<2
+langgraph>=1.2,<2
+pydantic>=2.13,<3
+python-dotenv>=1.0
+pandas>=2.2
+scikit-learn>=1.5
+streamlit>=1.40
