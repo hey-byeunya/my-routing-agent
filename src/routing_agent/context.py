@@ -44,13 +44,31 @@ def _key_of(title: str) -> str:
     return m.group(1) if m else title
 
 
-@lru_cache(maxsize=1)
-def load_manual_text() -> str:
+def _manual_stamp() -> float:
+    """매뉴얼 파일의 수정 시각. 캐시 키로 쓴다.
+
+    매뉴얼은 코드가 아니라 **운영이 고치는 설정**이다. 상담 문구를 바꾸려고
+    문서를 고쳤는데 떠 있는 서버가 옛 내용을 들고 있으면, "문구만 고치면
+    반영된다"는 말이 틀린 말이 된다. 실제로 그렇게 새어 나갔다 — 문서를
+    고쳤는데 화면은 옛 문구를 그대로 답했다.
+    """
+    try:
+        return MANUAL_PATH.stat().st_mtime
+    except OSError:
+        return 0.0
+
+
+@lru_cache(maxsize=2)
+def _read_manual(stamp: float) -> str:
     return MANUAL_PATH.read_text(encoding="utf-8")
 
 
-@lru_cache(maxsize=1)
-def split_units() -> tuple[Unit, ...]:
+def load_manual_text() -> str:
+    return _read_manual(_manual_stamp())
+
+
+@lru_cache(maxsize=2)
+def _split_units(stamp: float) -> tuple[Unit, ...]:
     """매뉴얼을 장 머리말 + 절 단위로 쪼갠다. 문서 순서를 유지한다."""
     text = load_manual_text()
     units: list[Unit] = []
@@ -93,6 +111,10 @@ def split_units() -> tuple[Unit, ...]:
             order += 1
 
     return tuple(units)
+
+
+def split_units() -> tuple[Unit, ...]:
+    return _split_units(_manual_stamp())
 
 
 # 카테고리 → 근거 절 매핑.
