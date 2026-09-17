@@ -92,7 +92,13 @@ def build_graph(
     # ------------------------------------------------------------ 1/6 판정
     def classify(state: AgentState) -> dict:
         question = state["question"]
-        prompt = f"{prompts.route_guide()}\n\n고객 문의: \"{question}\""
+        # 이전 대화를 함께 준다. 후속 턴은 그것만 떼어 놓으면 뜻이 없다 —
+        # "다시 해봐도 그대로예요" 같은 발화는 앞 대화 없이는 어느 카테고리인지 알 수 없다.
+        history = _history_text(state.get("history"))
+        prompt = prompts.route_guide()
+        if history:
+            prompt += f"\n\n[이전 대화]\n{history}"
+        prompt += f'\n\n고객 문의: "{question}"'
         try:
             chain = llm.with_structured_output(RouteDecision).with_retry(
                 retry_if_exception_type=(OutputParserException, BackendError),
