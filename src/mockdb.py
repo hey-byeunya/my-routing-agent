@@ -49,10 +49,28 @@ def _rate(group: str, carrier_name: str, weight_kg: float, size_cm: float, regio
     carriers = _db()["carriers"][group]
     carrier = carriers.get(carrier_name)
     if carrier is None:
-        return {
-            "error": f"'{carrier_name}' 은(는) 등록된 이름이 아니다",
-            "available": sorted(carriers),
-        }
+        # 고객은 "CU", "롯데" 처럼 줄여 말한다. 정확한 상품명만 받으면 조회가 통째로
+        # 실패하고, 상담원은 값을 손에 쥐고도 "등록된 이름이 아니다"만 말하게 된다.
+        # 부분 일치 후보를 **요금과 함께** 돌려준다. 어느 상품인지 고르는 일은
+        # 답변 단계가 하되, 고를 근거(금액)를 같이 준다.
+        key = carrier_name.replace(" ", "")
+        candidates = [n for n in carriers if key and key in n.replace(" ", "")]
+        if not candidates:
+            return {
+                "error": f"'{carrier_name}' 은(는) 등록된 이름이 아니다",
+                "available": sorted(carriers),
+            }
+        if len(candidates) > 1:
+            return {
+                "query": carrier_name,
+                "ambiguous": True,
+                "note": "이름이 여러 상품에 걸린다. 상품별 운임을 함께 안내하고 어느 것인지 확인한다",
+                "options": [
+                    _rate(group, name, weight_kg, size_cm, region) for name in sorted(candidates)
+                ],
+            }
+        carrier_name = candidates[0]
+        carrier = carriers[carrier_name]
     tier = _pick_tier(carrier["tiers"], weight_kg, size_cm)
     if tier is None:
         return {
