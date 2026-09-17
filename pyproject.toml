@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "routing-agent"
 version = "0.1.0"
-description = "택배중계 고객응대 라우팅 에이전트 — 판정·근거 조립·도구 호출·답변·검증"
+description = "택배중계 고객센터 에이전트 — 판정·근거 조립·도구 호출·답변·검증"
 requires-python = ">=3.11"
 dependencies = [
     "langchain>=1.4,<2",

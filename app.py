@@ -84,7 +84,7 @@ with st.sidebar.expander("백엔드별 상태"):
 
 # ---------------------------------------------------------------- 입력
 
-st.title("📦 택배중계 고객응대 라우팅 에이전트")
+st.title("📦 택배중계 고객센터 에이전트")
 st.caption("문의 하나 → ① 카테고리 판정 → ② 근거 조립 → ③ 계획·도구 → ④ 답변 → ⑤ 검증")
 
 # URL 로도 받는다: ?q=문의&run=1 (&backend=openai)
@@ -100,8 +100,22 @@ for col, (label, text) in zip(cols, EXAMPLES.items()):
     if col.button(label, use_container_width=True):
         st.session_state["question"] = text
 
+# 대화 이력. 정책 §10.2 는 "동일 사안 3회 이상 반복 문의"를 이관 조건으로 두는데,
+# 매 턴을 첫 문의로 취급하면 그 조건이 성립할 수가 없다. 화면도 대화로 이어져야 한다.
+history: list[tuple[str, str]] = st.session_state.setdefault("history", [])
+
+if history:
+    with st.expander(f"이전 대화 {len(history) // 2}턴", expanded=True):
+        for role, text in history:
+            st.markdown(("🙋 **고객** — " if role == "customer" else "💬 **상담원** — ") + text)
+    if st.button("새 대화로 시작"):
+        st.session_state["history"] = []
+        st.session_state["question"] = ""
+        st.rerun()
+
 question = st.text_area(
-    "고객 문의", value=st.session_state.get("question", ""), height=90,
+    "고객 문의" + (" (이어서)" if history else ""),
+    value=st.session_state.get("question", ""), height=90,
     placeholder="예) 편의점택배로 제주도에 보낼 수 있나요?",
 )
 run = st.button("실행", type="primary", disabled=not question.strip())
@@ -121,8 +135,16 @@ except BackendError as exc:
 graph = build_graph(llm=llm, threshold=threshold)
 started = time.monotonic()
 with st.spinner(f"{graph.backend_name} 로 파이프라인을 돌리는 중…"):
-    state = graph.invoke({"question": question, "history": [], "messages": [], "trace": []})
+    state = graph.invoke(
+        {"question": question, "history": list(history), "messages": [], "trace": []}
+    )
 elapsed = time.monotonic() - started
+
+# 이번 턴을 이력에 쌓는다. 다음 문의는 이 대화의 연장으로 판정된다.
+st.session_state["history"] = [
+    *history, ("customer", question), ("agent", state.get("answer", ""))
+]
+st.session_state["question"] = ""
 
 route = state.get("route", "?")
 confidence = state.get("confidence", 0.0) or 0.0
