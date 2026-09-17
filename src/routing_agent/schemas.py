@@ -58,7 +58,9 @@ class RouteDecision(BaseModel):
     reason: str = Field(description="이렇게 판단한 근거를 한 문장으로")
 
 
-ACTIONS = Literal["ASK", "ANSWER", "CONFIRM", "OUT_OF_SCOPE", "ESCALATE"]
+# CLOSE 는 "더 물을 것이 없다"는 고객 발화에 대응한다. 이것이 없으면 그런 턴이
+# 갈 곳이 없어 이관으로 샌다 — 실제로 "없어요" 한 마디에 담당자를 불렀다.
+ACTIONS = Literal["ASK", "ANSWER", "CONFIRM", "OUT_OF_SCOPE", "ESCALATE", "CLOSE"]
 
 
 class ToolCallPlan(BaseModel):

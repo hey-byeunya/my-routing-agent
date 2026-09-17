@@ -325,6 +325,49 @@ NAVIGATION_CONVERSATIONS = [
 ]
 
 
+# 대화를 맺는 턴. "추가로 궁금한 점 있으신가요?" 에 "없어요" 라고 답하는 자리가
+# 정답셋에 없었고, 그래서 그 턴이 갈 곳이 없어 이관으로 샜다. 종료는 우리가 못
+# 푼 것이 아니라 대화가 끝난 것이다.
+CLOSING_CONVERSATIONS = [
+    {
+        "conv_id": "N-010",
+        "title": "안내 후 종료 — 더 물을 것이 없다",
+        "route": "SPEC_SHIPPING",
+        "route_original": "SPEC_SHIPPING",
+        "pattern": "정책안내",
+        "tests": ["🔧 종료를 이관으로 취급 금지", "새 정보 덧붙이지 않기"],
+        "turns": [
+            {"turn": 1, "role": "customer", "text": "택배 내역은 어디서 조회해요?"},
+            {
+                "turn": 2,
+                "role": "agent",
+                "expect": {
+                    "action": "ANSWER",
+                    "tools": [],
+                    "must": ["예약현황"],
+                    "forbid": ["배송 중입니다"],
+                    "rubric": "정책 §5.4: 예약현황 메뉴에서 예약정보와 배송상태를 함께 본다.",
+                    "reference": "예약 내역과 배송 상태는 예약현황 메뉴에서 확인하실 수 있습니다. 예약할 때 쓰신 계정으로 로그인하셔야 보입니다.",
+                },
+            },
+            {"turn": 3, "role": "customer", "text": "없어요"},
+            {
+                "turn": 4,
+                "role": "agent",
+                "expect": {
+                    "action": "CLOSE",
+                    "tools": [],
+                    "must": ["감사"],
+                    "forbid": ["담당자에게 연결", "죄송합니다", "3개월"],
+                    "rubric": "더 물을 것이 없다는 뜻이다. 대화를 맺는다. 이관도 아니고, 안내를 덧붙일 자리도 아니다.",
+                    "reference": "이용해 주셔서 감사합니다. 도움이 필요하시면 언제든지 말씀해 주세요.",
+                },
+            },
+        ],
+    },
+]
+
+
 def apply_patches(payload: dict) -> list[str]:
     applied = []
     for patch in PATCHES:
@@ -348,7 +391,7 @@ def main() -> int:
     existing = {c["conv_id"] for c in payload["conversations"]}
 
     added = 0
-    for conv in NEW_CONVERSATIONS + NAVIGATION_CONVERSATIONS:
+    for conv in NEW_CONVERSATIONS + NAVIGATION_CONVERSATIONS + CLOSING_CONVERSATIONS:
         if conv["conv_id"] in existing:
             continue
         payload["conversations"].append(conv)
